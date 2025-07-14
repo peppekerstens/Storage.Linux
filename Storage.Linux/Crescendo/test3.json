@@ -1,0 +1,34 @@
+{
+  "$schema": "https://aka.ms/PowerShell/Crescendo/Schemas/2022-06",
+  "commands": [
+    {
+      "Verb": "Get",
+      "Noun": "LsBlk",
+      "OriginalName": "lsblk",
+      "OriginalCommandElements": [
+        "--json"
+      ],
+      "Platform": [
+        "Linux"
+      ],
+      "SupportsShouldProcess": false,
+      "SupportsTransactions": false,
+      "NoInvocation": false,
+      "Parameters": [
+        {
+            "Name":"Output",
+            "OriginalName": "--output",
+            "ParameterType": "string",
+            "IsRequired": true,
+            "DefaultValue": "NAME,SIZE,TYPE,MOUNTPOINT,FSTYPE,MODEL,SERIAL,ROTA,RM,STATE,OWNER,GROUP,MODE"
+        },
+        {
+            "Name":"AllDevices",
+            "OriginalName": "-a",
+            "ParameterType": "switch"
+        }
+      ],
+      "Examples": []
+    }
+  ]
+}

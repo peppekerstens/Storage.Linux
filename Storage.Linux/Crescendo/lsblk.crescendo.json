@@ -1,0 +1,50 @@
+{
+    "$schema": "https://aka.ms/PowerShell/Crescendo/Schemas/2022-06",
+    "commands": [
+        {
+            "Verb": "Get",
+            "Noun": "LsBlk",
+            "OriginalName": "lsblk",
+            "OriginalCommandElements": [
+                "--json"
+            ],
+            "Platform": [
+                "Linux"
+            ],
+            "SupportsShouldProcess": false,
+            "SupportsTransactions": false,
+            "NoInvocation": false,
+            "Parameters": [
+                {
+                    "Name": "Output",
+                    "OriginalName": "--output",
+                    "ParameterType": "string",
+                    "IsRequired": true,
+                    "DefaultValue": "NAME,SIZE,TYPE,MOUNTPOINT,FSTYPE,MODEL,SERIAL,ROTA,RM,STATE,OWNER,GROUP,MODE"
+                },
+                {
+                    "Name": "AllDevices",
+                    "OriginalName": "-a",
+                    "ParameterType": "switch"
+                }
+            ],
+            "OutputHandlers": [
+                {
+                    "ParameterSetName": "Default",
+                    "HandlerType": "Inline",
+                    "Handler": "$args[0] | ConvertFrom-Json | Select-Object -ExpandProperty blockdevices",
+                    "OutputType": "System.Collections.Generic.List`1[System.Management.Automation.PSObject]",
+                    "OutputTypeDescription": "List of block devices with properties such as NAME, SIZE, TYPE, MOUNTPOINT, FSTYPE, MODEL, SERIAL, ROTA, RM, STATE, OWNER, GROUP, MODE."
+                }
+            ],
+            "Description": "lsblk lists information about all available or the specified block devices. The lsblk command reads the sysfs filesystem and udev db to gather information. If the udev db is not available or lsblk is compiled without udev support, then it tries to read LABELs, UUIDs and filesystem types from the block device. In this case root permissions are necessary.",
+            "Usage": {
+                "Synopsis": "Lists information about all available or the specified block devices."
+            },
+            "HelpLinks": [
+                "https://manpages.ubuntu.com/manpages/trusty/man8/lsblk.8.html"
+            ],
+            "Examples": []
+        }
+    ]
+}

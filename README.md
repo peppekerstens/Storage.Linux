@@ -2,6 +2,8 @@
 
 PowerShell module for Linux. Aiming for cmdlet parity with the original Storage module
 
+This is work in progress. More information can be found [here](https://peppekerstens.github.io/linux-command-wrapping-part-1/)
+
 ## Context and reference
 
 Some metadata for context and reference:
