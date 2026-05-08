@@ -10,9 +10,8 @@ Part of the **Linux PowerShell Cmdlet Parity** project — inspired by Evgenij S
 
 ## What it does
 
-Wraps `lsblk` and `df` to provide PowerShell cmdlets matching the Windows `Storage` module API as closely as possible. All 161 cmdlets and 10 aliases that the Windows module exports are present — 4 are fully implemented, the remaining 157 are stubs that emit a warning.
+Wraps `lsblk` and `df` to provide PowerShell cmdlets matching the Windows `Storage` module API as closely as possible. All 161 cmdlets and 10 aliases that the Windows module exports are present — 4 are fully implemented, the remaining 157 are stubs that emit a warning on Linux.
 
-Attempting to load the module on Windows raises an error:
 ```
 Storage.Linux cannot be loaded on Windows. On Windows, use the built-in
 'Storage' module: Import-Module Storage
@@ -61,7 +60,7 @@ Get-PhysicalDisk
 # Filter SSDs only
 Get-PhysicalDisk -MediaType SSD
 
-# Find volumes with less than 15 % free space
+# Find volumes with less than 15% free space
 Get-Volume | Where-Object { $_.Size -gt 0 -and ($_.SizeRemaining / $_.Size) -lt 0.15 }
 ```
 
@@ -261,6 +260,59 @@ Legend: ✅ Implemented &nbsp;|&nbsp; ⚠️ Stub &nbsp;|&nbsp; 🔗 Alias
 
 ---
 
+## How we built this
+
+The Windows `Storage` module is enormous: 161 cmdlets, 10 aliases, all backed by WMI/CIM providers that simply do not exist on Linux. None of it ports. So the question was never "how do we port the Windows module" but "what Linux tools give us the same data, and how do we shape the output to match?"
+
+### Choosing lsblk over fdisk and parted
+
+`fdisk` and `parted` are the traditional Linux disk tools, but their output formats vary by version and neither produces JSON. `lsblk` does — with `--json` it returns a cleanly structured tree. That made parsing straightforward and reliable:
+
+```bash
+lsblk --json --bytes --output NAME,SIZE,TYPE,MOUNTPOINT,FSTYPE,UUID,MODEL,SERIAL,ROTA,RM,PHY-SEC,LOG-SEC
+```
+
+`--bytes` is not optional. Without it, `SIZE` comes back as a human-readable string like `"388.6M"`. The first version did not include `--bytes` and `Size` was a string. That broke every downstream calculation. Always use `--bytes`.
+
+### Using Crescendo as an internal wrapper
+
+Part 4 of the blog series introduced Crescendo for wrapping CLI tools with JSON output. For `lsblk` it is a good fit. The Crescendo module generates a `Get-LsBlk` internal function. The important thing: `Get-LsBlk` is a **private helper** — it is loaded as a nested module inside `Storage.Linux.psm1` and is not listed in `FunctionsToExport` in the `.psd1`. The module manifest's export list acts as a filter; anything not on that list stays hidden from consumers. This is the correct way to keep Crescendo wrappers private.
+
+### The swap device problem
+
+`lsblk` lists swap partitions in its output, with `MOUNTPOINT = [SWAP]`. The first version of `Get-Volume` returned swap partitions as volumes, which is wrong. Fix: filter on `-match '^/'`. Real filesystem mountpoints start with `/`. `[SWAP]` does not. This is now in the implementation:
+
+```powershell
+$d.mountpoint -match '^/'
+```
+
+A related WSL2 quirk: on Ubuntu 24.04 the root distro filesystem mounts at `/mnt/wslg/distro`, not `/`. Tests that assumed `/` would always be present needed updating.
+
+### The 157 stubs
+
+The strategy across this whole project is to export the same API surface as the Windows module, even for cmdlets not yet implemented. Stubs emit a `Write-Warning` on Linux and delegate to the real Windows module on Windows. A helper script (`Helpers/Set-StubFunctions.ps1`) generates these automatically from the list of Windows cmdlet names. One rule: always use plain `param()` for stubs. Do not try to extract the param block from the Windows proxy function — those are deeply nested and fragile.
+
+### The -Filter -Exclude trap
+
+The first version of `Storage.Linux.psm1` used `Get-ChildItem -Filter '*.ps1' -Exclude '*.Tests.ps1'` to dot-source function files. On Windows, combining `-Filter` and `-Exclude` silently returns **nothing**. The fix is `Where-Object`:
+
+```powershell
+Get-ChildItem -Path $functionPath -Filter '*.ps1' |
+    Where-Object { $_.Name -notlike '*.Tests.ps1' }
+```
+
+This became a standard pattern across all modules in the series.
+
+### Going Linux-only
+
+Early versions included a Windows delegation path inside each cmdlet: if not Linux, call `Storage\Get-Disk`. On reflection, this is unnecessary — Windows already has the real module. From v0.5.0 the module refuses to load on Windows entirely, with a clear error pointing to `Import-Module Storage`. Simpler code, clearer intent, no dead paths.
+
+### Test approach
+
+503 Pester tests cover the full surface: module export counts, all 10 alias→target mappings, property shapes for the 4 implemented cmdlets, and per-stub checks (exported, no-throw, emits-warning) for all 157 stubs. Tests use `-ForEach` data driven patterns — never raw `foreach` loops, which do not work with Pester 5's scoping model. `BeforeDiscovery` handles cross-version `$PSScriptRoot` reliability (Pester 5.3.x on Windows vs 5.7.x on WSL2).
+
+---
+
 ## Implementation notes
 
 - **Linux-only module** — `Storage.Linux.psm1` throws a descriptive error on Windows at load time; on Windows use `Import-Module Storage` instead.
@@ -269,8 +321,8 @@ Legend: ✅ Implemented &nbsp;|&nbsp; ⚠️ Stub &nbsp;|&nbsp; 🔗 Alias
 - In WSL2 Ubuntu 24.04, the root distro filesystem mounts at `/mnt/wslg/distro`, not `/`. Tests must not hardcode `/` as an expected mountpoint.
 - `lsblk` column names use hyphens (e.g. `log-sec`, `phy-sec`) — accessed as `$d.'log-sec'` in PowerShell.
 - `Get-LsBlk` (Crescendo-generated raw `lsblk` wrapper) is an internal helper loaded as a nested module — it is **not** part of the public surface.
-- `Storage.Linux.Tests.ps1`: requires Pester 5.2+; 503 tests, all skipped on Windows (module cannot load), all run on Linux. Uses `-ForEach` (never raw `foreach`) for Pester 5 variable scoping correctness.
-- `Examples.Tests.ps1`: requires Pester 5.2+; uses `BeforeDiscovery` for `$PSScriptRoot` reliability across Pester 5.3.x (Windows) and 5.7.x (WSL2); 31 tests — 15 pass on Windows (file existence + syntax), 16 are Linux-only and skipped on Windows.
+- `Storage.Linux.Tests.ps1`: requires Pester 5.2+; 503 tests, all skipped on Windows (module cannot load), all run on Linux.
+- `Examples.Tests.ps1`: requires Pester 5.2+; uses `BeforeDiscovery` for `$PSScriptRoot` reliability; 31 tests — 15 pass on Windows (file existence + syntax), 16 are Linux-only.
 
 ---
 
@@ -278,7 +330,7 @@ Legend: ✅ Implemented &nbsp;|&nbsp; ⚠️ Stub &nbsp;|&nbsp; 🔗 Alias
 
 | Version | Notes |
 |---|---|
-| 0.5.0 | Module is now Linux-only: `Storage.Linux.psm1` throws a descriptive error on Windows at load time. Both test files require Pester 5.2+. `Storage.Linux.Tests.ps1` skips all 503 tests on Windows (module cannot load). `Examples.Tests.ps1` no longer requires `Storage.Linux` via `#Requires`. |
+| 0.5.0 | Module is now Linux-only: `Storage.Linux.psm1` throws a descriptive error on Windows at load time. Both test files require Pester 5.2+. `Storage.Linux.Tests.ps1` skips all 503 tests on Windows. `Examples.Tests.ps1` no longer requires `Storage.Linux` via `#Requires`. |
 | 0.4.0 | Added `Examples\` folder with 5 real-world scripts and `Examples.Tests.ps1` (31 Pester tests). README updated. |
 | 0.3.0 | `FunctionsToExport` corrected to all 161 Windows Storage functions. All 10 aliases defined with `Set-Alias`. `Get-Disk` fixed: `lsblk --bytes` so `Size` is `[uint64]`. `Get-Volume` fixed: `[SWAP]` excluded. Pester tests expanded to 503. |
 | 0.2.0 | `Get-Disk`, `Get-PhysicalDisk`, `Get-Partition`, `Get-Volume` fully implemented. Module manifest and root module added. All remaining cmdlets stubbed. |
