@@ -1,20 +1,27 @@
-#Requires -Modules Pester
+#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.2.0' }
 
 <#
 .Synopsis
     Pester tests for Storage.Linux.
     Covers: module surface, aliases, implemented cmdlets, and all 157 stub cmdlets.
     Run on Linux (WSL2/Ubuntu) with: Invoke-Pester ./Storage.Linux.Tests.ps1
-    On Windows the stub warning tests are skipped; module-surface and alias tests run on both platforms.
+    All tests require Linux — the module refuses to load on Windows by design.
+    Tests that require the module are skipped automatically on Windows.
 #>
 
+BeforeDiscovery {
+    $script:OnLinux = $IsLinux
+}
+
 BeforeAll {
-    $modulePsd1 = Join-Path $PSScriptRoot 'Storage.Linux.psd1'
-    Import-Module $modulePsd1 -Force
+    if ($IsLinux) {
+        $modulePsd1 = Join-Path $PSScriptRoot 'Storage.Linux.psd1'
+        Import-Module $modulePsd1 -Force
+    }
 }
 
 # ---------------------------------------------------------------------------
-Describe 'Module surface' {
+Describe 'Module surface' -Skip:(-not $script:OnLinux) {
 
     It 'Exports 161 functions' {
         $m = Get-Module Storage.Linux
@@ -33,7 +40,7 @@ Describe 'Module surface' {
 }
 
 # ---------------------------------------------------------------------------
-Describe 'Aliases' {
+Describe 'Aliases' -Skip:(-not $script:OnLinux) {
 
     $aliasCases = @(
         @{ Alias = 'Disable-PhysicalDiskIndication';  Target = 'Disable-PhysicalDiskIdentification' }
@@ -202,7 +209,7 @@ Describe 'Get-Volume' {
 }
 
 # ---------------------------------------------------------------------------
-Describe 'Stub functions' {
+Describe 'Stub functions' -Skip:(-not $script:OnLinux) {
 
     $stubCases = @(
         @{ Name = 'Add-InitiatorIdToMaskingSet' }

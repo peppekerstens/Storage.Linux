@@ -2,24 +2,32 @@
 
 PowerShell 7.x module providing cmdlet parity with the Windows `Storage` module on Linux. Wraps native CLI tools (`lsblk`, `df`) to deliver a familiar PowerShell experience for disk, partition and volume management.
 
+**This module is Linux-only.** It will refuse to load on Windows with a clear error message. On Windows, use the built-in `Storage` module (`Import-Module Storage`) instead.
+
 Part of the **Linux PowerShell Cmdlet Parity** project — inspired by Evgenij Smirnov's [2025 European PowerShell Summit session](https://www.youtube.com/watch?v=RlzinWYIjBY) and documented in the blog series at [peppekerstens.github.io](https://peppekerstens.github.io/linux-command-wrapping-part-1/).
 
 ---
 
 ## What it does
 
-On **Linux**, wraps `lsblk` and `df` to provide PowerShell cmdlets matching the Windows `Storage` module API as closely as possible. All 161 cmdlets and 10 aliases that the Windows module exports are present in this module — 4 are fully implemented, the remaining 157 are stubs that emit a warning on Linux.
+Wraps `lsblk` and `df` to provide PowerShell cmdlets matching the Windows `Storage` module API as closely as possible. All 161 cmdlets and 10 aliases that the Windows module exports are present — 4 are fully implemented, the remaining 157 are stubs that emit a warning.
 
-On **Windows**, every function delegates transparently to the built-in `Storage` cmdlet — no behavioral change.
+Attempting to load the module on Windows raises an error:
+```
+Storage.Linux cannot be loaded on Windows. On Windows, use the built-in
+'Storage' module: Import-Module Storage
+```
 
-An `Examples\` folder ships with the module containing five ready-to-run scripts that demonstrate common real-world usage patterns. Each example works identically on Windows and Linux.
+An `Examples\` folder ships with the module containing five ready-to-run scripts that demonstrate common real-world usage patterns.
 
 ---
 
 ## Requirements
 
+- **Linux only** — the module will not load on Windows (by design)
 - PowerShell 7.2+
-- Linux with `util-linux` (`lsblk`) and `coreutils` (`df`) — both available by default on Ubuntu 24.04
+- `util-linux` (`lsblk`) and `coreutils` (`df`) — both available by default on Ubuntu 24.04
+- Pester 5.2+ (for running tests)
 
 ---
 
@@ -255,13 +263,14 @@ Legend: ✅ Implemented &nbsp;|&nbsp; ⚠️ Stub &nbsp;|&nbsp; 🔗 Alias
 
 ## Implementation notes
 
+- **Linux-only module** — `Storage.Linux.psm1` throws a descriptive error on Windows at load time; on Windows use `Import-Module Storage` instead.
 - `lsblk --bytes` is required — without it, `SIZE` is returned as a human-readable string (e.g. `"388.6M"`) instead of a numeric `[uint64]`.
 - `lsblk` lists swap devices with `MOUNTPOINT = [SWAP]`. `Get-Volume` filters these out with `-notmatch '^/'` so only real filesystem mountpoints are returned.
 - In WSL2 Ubuntu 24.04, the root distro filesystem mounts at `/mnt/wslg/distro`, not `/`. Tests must not hardcode `/` as an expected mountpoint.
 - `lsblk` column names use hyphens (e.g. `log-sec`, `phy-sec`) — accessed as `$d.'log-sec'` in PowerShell.
 - `Get-LsBlk` (Crescendo-generated raw `lsblk` wrapper) is an internal helper loaded as a nested module — it is **not** part of the public surface.
-- 503 Pester 5 tests cover module surface, all 10 alias mappings, property shapes for the 4 implemented cmdlets, and per-stub exported/no-throw/emits-warning checks. Tests use `-ForEach` (never raw `foreach`) for Pester 5 variable scoping correctness.
-- `Examples.Tests.ps1` uses `BeforeDiscovery` for compatibility across Pester 5.3.x (Windows) and 5.7.x (WSL2); 31 tests — 15 pass on Windows, 16 are Linux-only and skipped on Windows.
+- `Storage.Linux.Tests.ps1`: requires Pester 5.2+; 503 tests, all skipped on Windows (module cannot load), all run on Linux. Uses `-ForEach` (never raw `foreach`) for Pester 5 variable scoping correctness.
+- `Examples.Tests.ps1`: requires Pester 5.2+; uses `BeforeDiscovery` for `$PSScriptRoot` reliability across Pester 5.3.x (Windows) and 5.7.x (WSL2); 31 tests — 15 pass on Windows (file existence + syntax), 16 are Linux-only and skipped on Windows.
 
 ---
 
@@ -269,7 +278,8 @@ Legend: ✅ Implemented &nbsp;|&nbsp; ⚠️ Stub &nbsp;|&nbsp; 🔗 Alias
 
 | Version | Notes |
 |---|---|
-| 0.4.0 | Added `Examples\` folder with 5 real-world scripts and `Examples.Tests.ps1` (31 Pester tests). |
+| 0.5.0 | Module is now Linux-only: `Storage.Linux.psm1` throws a descriptive error on Windows at load time. Both test files require Pester 5.2+. `Storage.Linux.Tests.ps1` skips all 503 tests on Windows (module cannot load). `Examples.Tests.ps1` no longer requires `Storage.Linux` via `#Requires`. |
+| 0.4.0 | Added `Examples\` folder with 5 real-world scripts and `Examples.Tests.ps1` (31 Pester tests). README updated. |
 | 0.3.0 | `FunctionsToExport` corrected to all 161 Windows Storage functions. All 10 aliases defined with `Set-Alias`. `Get-Disk` fixed: `lsblk --bytes` so `Size` is `[uint64]`. `Get-Volume` fixed: `[SWAP]` excluded. Pester tests expanded to 503. |
 | 0.2.0 | `Get-Disk`, `Get-PhysicalDisk`, `Get-Partition`, `Get-Volume` fully implemented. Module manifest and root module added. All remaining cmdlets stubbed. |
 | 0.1.0 | Initial scaffolding with Crescendo `lsblk` config and proxy function stubs. |

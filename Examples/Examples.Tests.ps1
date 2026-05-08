@@ -1,4 +1,4 @@
-#Requires -Modules Pester, Storage.Linux
+#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.2.0' }
 <#
 .Synopsis
     Pester tests for Storage.Linux example scripts.
@@ -32,10 +32,12 @@ BeforeDiscovery {
 BeforeAll {
     # Resolve again inside BeforeAll (runtime) for safety
     $script:ExamplesDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path $PSCommandPath -Parent }
-    # Import the module from one level up (repo root → module folder)
-    $modulePath = Join-Path (Split-Path $script:ExamplesDir -Parent) 'Storage.Linux' 'Storage.Linux.psd1'
-    if (Test-Path $modulePath) {
-        Import-Module $modulePath -Force -ErrorAction Stop
+    # Import the module on Linux only — it refuses to load on Windows by design
+    if ($IsLinux) {
+        $modulePath = Join-Path (Split-Path $script:ExamplesDir -Parent) 'Storage.Linux' 'Storage.Linux.psd1'
+        if (Test-Path $modulePath) {
+            Import-Module $modulePath -Force -ErrorAction Stop
+        }
     }
 }
 

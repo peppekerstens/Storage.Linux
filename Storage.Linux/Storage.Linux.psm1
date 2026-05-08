@@ -4,6 +4,17 @@
 # Root module for Storage.Linux.
 # Dot-sources all function files and loads the Crescendo sub-module (private).
 
+# Linux-only guard — this module wraps Linux CLI tools and must not be loaded
+# on Windows. On Windows, use the built-in Storage module instead:
+#   Import-Module Storage
+if (-not $IsLinux) {
+    throw (
+        "Storage.Linux cannot be loaded on Windows. " +
+        "On Windows, use the built-in 'Storage' module: Import-Module Storage`n" +
+        "Storage.Linux is a Linux-only peer module that wraps lsblk and df."
+    )
+}
+
 $functionPath = Join-Path $PSScriptRoot 'Functions'
 $functionFiles = Get-ChildItem -Path $functionPath -Filter '*.ps1' -ErrorAction SilentlyContinue |
     Where-Object { $_.Name -notlike '*.Tests.ps1' }
