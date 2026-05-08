@@ -48,7 +48,7 @@ function Get-Disk {
         throw "Get-Disk: 'lsblk' not found. Install util-linux: sudo apt-get install util-linux"
     }
 
-    $json = lsblk --json --output NAME,SIZE,TYPE,MOUNTPOINT,MODEL,SERIAL,ROTA,RM,STATE,TRAN,VENDOR,PTTYPE,LOG-SEC,PHY-SEC 2>$null
+    $json = lsblk --json --bytes --output NAME,SIZE,TYPE,MOUNTPOINT,MODEL,SERIAL,ROTA,RM,STATE,TRAN,VENDOR,PTTYPE,LOG-SEC,PHY-SEC 2>$null
     if (-not $json) { return }
 
     $disks = ($json | ConvertFrom-Json).blockdevices | Where-Object { $_.type -eq 'disk' }
@@ -59,7 +59,7 @@ function Get-Disk {
             Number          = [uint32]$index
             FriendlyName    = if ($d.model) { $d.model.Trim() } else { $d.name }
             SerialNumber    = if ($d.serial) { $d.serial.Trim() } else { '' }
-            Size            = $d.size
+            Size            = [uint64]$d.size
             BusType         = if ($d.tran)  { $d.tran.ToUpper() } else { 'Unknown' }
             MediaType       = if ($d.rota -eq '1' -or $d.rota -eq $true) { 'HDD' } else { 'SSD' }
             IsRemovable     = ($d.rm -eq '1' -or $d.rm -eq $true)

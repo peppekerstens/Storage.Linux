@@ -80,8 +80,9 @@ function Get-Volume {
     }
 
     $results = foreach ($d in $allDevices) {
-        # Only include devices with a mountpoint and a filesystem
+        # Only include devices with a real mountpoint and a filesystem (skip [SWAP] etc.)
         if (-not $d.mountpoint -or -not $d.fstype) { continue }
+        if ($d.mountpoint -notmatch '^/') { continue }
 
         $df = $dfMap[$d.mountpoint]
         [PSCustomObject]@{
