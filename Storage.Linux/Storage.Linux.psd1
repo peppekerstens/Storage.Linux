@@ -4,7 +4,7 @@
 
 @{
     RootModule        = 'Storage.Linux.psm1'
-    ModuleVersion     = '0.3.0'
+    ModuleVersion     = '0.4.0'
     GUID              = 'b2c3d4e5-f6a7-8901-bcde-f12345678901'
     Author            = 'Peppe Kerstens'
     CompanyName       = ''

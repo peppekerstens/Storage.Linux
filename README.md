@@ -12,6 +12,8 @@ On **Linux**, wraps `lsblk` and `df` to provide PowerShell cmdlets matching the 
 
 On **Windows**, every function delegates transparently to the built-in `Storage` cmdlet — no behavioral change.
 
+An `Examples\` folder ships with the module containing five ready-to-run scripts that demonstrate common real-world usage patterns. Each example works identically on Windows and Linux.
+
 ---
 
 ## Requirements
@@ -47,7 +49,27 @@ Get-Volume
 
 # List physical disks with media type (HDD/SSD)
 Get-PhysicalDisk
+
+# Filter SSDs only
+Get-PhysicalDisk -MediaType SSD
+
+# Find volumes with less than 15 % free space
+Get-Volume | Where-Object { $_.Size -gt 0 -and ($_.SizeRemaining / $_.Size) -lt 0.15 }
 ```
+
+See the [`Examples\`](Examples/) folder for ready-to-run scripts covering common real-world patterns.
+
+---
+
+## Examples
+
+| Script | Description |
+|---|---|
+| [`Get-DiskInventory.ps1`](Examples/Get-DiskInventory.ps1) | Formatted disk listing with sizes in GB |
+| [`Get-LowSpaceVolumes.ps1`](Examples/Get-LowSpaceVolumes.ps1) | Volumes below a configurable free-space threshold |
+| [`Get-DiskLayout.ps1`](Examples/Get-DiskLayout.ps1) | Hierarchical disk → partition report |
+| [`Get-SsdHddFilter.ps1`](Examples/Get-SsdHddFilter.ps1) | Physical disks grouped/filtered by media type |
+| [`Get-StorageSummary.ps1`](Examples/Get-StorageSummary.ps1) | Combined capacity and usage report across all cmdlets |
 
 ---
 
@@ -238,7 +260,8 @@ Legend: ✅ Implemented &nbsp;|&nbsp; ⚠️ Stub &nbsp;|&nbsp; 🔗 Alias
 - In WSL2 Ubuntu 24.04, the root distro filesystem mounts at `/mnt/wslg/distro`, not `/`. Tests must not hardcode `/` as an expected mountpoint.
 - `lsblk` column names use hyphens (e.g. `log-sec`, `phy-sec`) — accessed as `$d.'log-sec'` in PowerShell.
 - `Get-LsBlk` (Crescendo-generated raw `lsblk` wrapper) is an internal helper loaded as a nested module — it is **not** part of the public surface.
-- 503 Pester tests cover module surface, all 10 alias mappings, property shapes for the 4 implemented cmdlets, and per-stub exported/no-throw/emits-warning checks.
+- 503 Pester 5 tests cover module surface, all 10 alias mappings, property shapes for the 4 implemented cmdlets, and per-stub exported/no-throw/emits-warning checks. Tests use `-ForEach` (never raw `foreach`) for Pester 5 variable scoping correctness.
+- `Examples.Tests.ps1` uses `BeforeDiscovery` for compatibility across Pester 5.3.x (Windows) and 5.7.x (WSL2); 31 tests — 15 pass on Windows, 16 are Linux-only and skipped on Windows.
 
 ---
 
@@ -246,6 +269,7 @@ Legend: ✅ Implemented &nbsp;|&nbsp; ⚠️ Stub &nbsp;|&nbsp; 🔗 Alias
 
 | Version | Notes |
 |---|---|
+| 0.4.0 | Added `Examples\` folder with 5 real-world scripts and `Examples.Tests.ps1` (31 Pester tests). |
 | 0.3.0 | `FunctionsToExport` corrected to all 161 Windows Storage functions. All 10 aliases defined with `Set-Alias`. `Get-Disk` fixed: `lsblk --bytes` so `Size` is `[uint64]`. `Get-Volume` fixed: `[SWAP]` excluded. Pester tests expanded to 503. |
 | 0.2.0 | `Get-Disk`, `Get-PhysicalDisk`, `Get-Partition`, `Get-Volume` fully implemented. Module manifest and root module added. All remaining cmdlets stubbed. |
 | 0.1.0 | Initial scaffolding with Crescendo `lsblk` config and proxy function stubs. |
