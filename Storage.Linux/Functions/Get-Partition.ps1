@@ -28,6 +28,7 @@ function Get-Partition {
         [char[]]$DriveLetter
     )
 
+    process {
     if (-not $IsLinux) {
         $params = @{}
         if ($PSBoundParameters.ContainsKey('DiskNumber'))  { $params['DiskNumber']  = $DiskNumber }
@@ -82,4 +83,5 @@ function Get-Partition {
     }
 
     $results
+    } # end process
 }

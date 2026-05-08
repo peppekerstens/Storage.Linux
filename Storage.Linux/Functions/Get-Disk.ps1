@@ -34,6 +34,7 @@ function Get-Disk {
         [string[]]$SerialNumber
     )
 
+    process {
     if (-not $IsLinux) {
         # Delegate to Windows built-in
         $params = @{}
@@ -87,4 +88,5 @@ function Get-Disk {
     }
 
     $results
+    } # end process
 }
