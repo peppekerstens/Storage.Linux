@@ -1,275 +1,94 @@
-Function Get-PhysicalDisk {
+function Get-PhysicalDisk {
+    <#
+    .Synopsis
+        Gets a list of all PhysicalDisk objects visible to any available Storage Management Provider.
+    .Description
+        Cross-platform implementation of Get-PhysicalDisk.
+        On Windows, delegates to the built-in Storage\Get-PhysicalDisk cmdlet.
+        On Linux, wraps lsblk to return all disk-type and loop-type block devices
+        with properties matching the Windows MSFT_PhysicalDisk object shape.
+    .Parameter FriendlyName
+        Filter by model/friendly name (wildcard supported).
+    .Parameter SerialNumber
+        Filter by serial number (wildcard supported).
+    .Parameter MediaType
+        Filter by media type: HDD, SSD, or Unspecified.
+    .Notes
+        Free to use under GNU v3 Public License (https://choosealicense.com/licenses/gpl-3.0/)
+        Author: Peppe Kerstens (NLD)
+        Version: 1.0.0
+        Date: 2025-07-17
+    .Link
+        https://learn.microsoft.com/powershell/module/storage/get-physicaldisk
+    #>
+    [CmdletBinding(DefaultParameterSetName='Default')]
+    param(
+        [Parameter(ParameterSetName='ByName', Position=0)]
+        [string[]]$FriendlyName,
 
-[CmdletBinding(DefaultParameterSetName='ByUniqueId')]
-param(
-    [Parameter(ParameterSetName='ByUniqueId', ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true)]
-    [Alias('Id')]
-    [ValidateNotNullOrEmpty()]
-    [string]
-    ${UniqueId},
+        [Parameter(ParameterSetName='BySerial')]
+        [string[]]$SerialNumber,
 
-    [Parameter(ParameterSetName='ByObjectId', ValueFromPipeline=$true)]
-    [Alias('PhysicalDiskObjectId')]
-    [ValidateNotNullOrEmpty()]
-    [string]
-    ${ObjectId},
+        [Parameter()]
+        [ValidateSet('HDD','SSD','Unspecified')]
+        [string]$MediaType
+    )
 
-    [Parameter(ParameterSetName='ByDeviceNumber')]
-    [ValidateNotNullOrEmpty()]
-    [string]
-    ${DeviceNumber},
+    if (-not $IsLinux) {
+        $params = @{}
+        if ($PSBoundParameters.ContainsKey('FriendlyName')) { $params['FriendlyName'] = $FriendlyName }
+        if ($PSBoundParameters.ContainsKey('SerialNumber')) { $params['SerialNumber'] = $SerialNumber }
+        if ($PSBoundParameters.ContainsKey('MediaType'))    { $params['MediaType']    = $MediaType }
+        Storage\Get-PhysicalDisk @params
+        return
+    }
 
-    [Parameter(ParameterSetName='ByName', Position=0, ValueFromPipeline=$true)]
-    [ValidateNotNullOrEmpty()]
-    [string]
-    ${FriendlyName},
+    if (-not (Get-Command lsblk -ErrorAction SilentlyContinue)) {
+        throw "Get-PhysicalDisk: 'lsblk' not found. Install util-linux: sudo apt-get install util-linux"
+    }
 
-    [Parameter(ParameterSetName='ByName', Position=1, ValueFromPipeline=$true)]
-    [ValidateNotNullOrEmpty()]
-    [string]
-    ${SerialNumber},
+    $json = lsblk --json --output NAME,SIZE,TYPE,MODEL,SERIAL,ROTA,RM,STATE,TRAN,VENDOR,LOG-SEC,PHY-SEC 2>$null
+    if (-not $json) { return }
 
-    [Parameter(ParameterSetName='ByInputObject', Mandatory=$true, ValueFromPipeline=$true)]
-    [ValidateNotNullOrEmpty()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#ROOT/Microsoft/Windows/Storage/MSFT_PhysicalDisk')]
-    [ciminstance]
-    ${InputObject},
+    $devices = ($json | ConvertFrom-Json).blockdevices | Where-Object { $_.type -in 'disk','loop' }
 
-    [Parameter(ParameterSetName='ByStorageSubsystem', Mandatory=$true, ValueFromPipeline=$true)]
-    [ValidateNotNullOrEmpty()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#ROOT/Microsoft/Windows/Storage/MSFT_StorageSubsystem')]
-    [ciminstance]
-    ${StorageSubsystem},
-
-    [Parameter(ParameterSetName='ByStorageEnclosure', Mandatory=$true, ValueFromPipeline=$true)]
-    [ValidateNotNullOrEmpty()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#ROOT/Microsoft/Windows/Storage/MSFT_StorageEnclosure')]
-    [ciminstance]
-    ${StorageEnclosure},
-
-    [Parameter(ParameterSetName='ByStorageScaleUnit', Mandatory=$true, ValueFromPipeline=$true)]
-    [ValidateNotNullOrEmpty()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#ROOT/Microsoft/Windows/Storage/MSFT_StorageScaleUnit')]
-    [ciminstance]
-    ${StorageScaleUnit},
-
-    [Parameter(ParameterSetName='ByStorageChassis', Mandatory=$true, ValueFromPipeline=$true)]
-    [ValidateNotNullOrEmpty()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#ROOT/Microsoft/Windows/Storage/MSFT_StorageChassis')]
-    [ciminstance]
-    ${StorageChassis},
-
-    [Parameter(ParameterSetName='ByStorageRack', Mandatory=$true, ValueFromPipeline=$true)]
-    [ValidateNotNullOrEmpty()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#ROOT/Microsoft/Windows/Storage/MSFT_StorageRack')]
-    [ciminstance]
-    ${StorageRack},
-
-    [Parameter(ParameterSetName='ByStorageSite', Mandatory=$true, ValueFromPipeline=$true)]
-    [ValidateNotNullOrEmpty()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#ROOT/Microsoft/Windows/Storage/MSFT_StorageSite')]
-    [ciminstance]
-    ${StorageSite},
-
-    [Parameter(ParameterSetName='ByStorageNode', Mandatory=$true, ValueFromPipeline=$true)]
-    [ValidateNotNullOrEmpty()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#ROOT/Microsoft/Windows/Storage/MSFT_StorageNode')]
-    [ciminstance]
-    ${StorageNode},
-
-    [Parameter(ParameterSetName='ByStoragePool', Mandatory=$true, ValueFromPipeline=$true)]
-    [ValidateNotNullOrEmpty()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#ROOT/Microsoft/Windows/Storage/MSFT_StoragePool')]
-    [ciminstance]
-    ${StoragePool},
-
-    [Parameter(ParameterSetName='ByVirtualDisk', Mandatory=$true, ValueFromPipeline=$true)]
-    [ValidateNotNullOrEmpty()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#ROOT/Microsoft/Windows/Storage/MSFT_VirtualDisk')]
-    [ciminstance]
-    ${VirtualDisk},
-
-    [Parameter(ParameterSetName='ByVirtualDisk')]
-    [ulong]
-    ${VirtualRangeMin},
-
-    [Parameter(ParameterSetName='ByVirtualDisk')]
-    [ulong]
-    ${VirtualRangeMax},
-
-    [Parameter(ParameterSetName='ByVirtualDisk')]
-    [bool]
-    ${HasAllocations},
-
-    [Parameter(ParameterSetName='ByVirtualDisk')]
-    [bool]
-    ${SelectedForUse},
-
-    [Parameter(ParameterSetName='ByVirtualDisk')]
-    [switch]
-    ${NoRedundancy},
-
-    [Parameter(ParameterSetName='ByVirtualDisk')]
-    [Parameter(ParameterSetName='ByStoragePool')]
-    [switch]
-    ${HasMetadata},
-
-    [Parameter(ParameterSetName='ByStorageNode')]
-    [switch]
-    ${PhysicallyConnected},
-
-    [Parameter(ParameterSetName='ByVirtualDisk')]
-    [Parameter(ParameterSetName='ByStoragePool')]
-    [Parameter(ParameterSetName='ByStorageNode')]
-    [Parameter(ParameterSetName='ByStorageSite')]
-    [Parameter(ParameterSetName='ByStorageRack')]
-    [Parameter(ParameterSetName='ByStorageChassis')]
-    [Parameter(ParameterSetName='ByStorageScaleUnit')]
-    [Parameter(ParameterSetName='ByStorageEnclosure')]
-    [Parameter(ParameterSetName='ByStorageSubsystem')]
-    [Parameter(ParameterSetName='ByName')]
-    [Parameter(ParameterSetName='ByDeviceNumber')]
-    [Parameter(ParameterSetName='ByObjectId')]
-    [Parameter(ParameterSetName='ByUniqueId')]
-    [Get-PhysicalDisk.PhysicalDiskUsage]
-    ${Usage},
-
-    [Parameter(ParameterSetName='ByVirtualDisk')]
-    [Parameter(ParameterSetName='ByStoragePool')]
-    [Parameter(ParameterSetName='ByStorageNode')]
-    [Parameter(ParameterSetName='ByStorageSite')]
-    [Parameter(ParameterSetName='ByStorageRack')]
-    [Parameter(ParameterSetName='ByStorageChassis')]
-    [Parameter(ParameterSetName='ByStorageScaleUnit')]
-    [Parameter(ParameterSetName='ByStorageEnclosure')]
-    [Parameter(ParameterSetName='ByStorageSubsystem')]
-    [Parameter(ParameterSetName='ByName')]
-    [Parameter(ParameterSetName='ByDeviceNumber')]
-    [Parameter(ParameterSetName='ByObjectId')]
-    [Parameter(ParameterSetName='ByUniqueId')]
-    [ValidateNotNullOrEmpty()]
-    [string]
-    ${Description},
-
-    [Parameter(ParameterSetName='ByVirtualDisk')]
-    [Parameter(ParameterSetName='ByStoragePool')]
-    [Parameter(ParameterSetName='ByStorageNode')]
-    [Parameter(ParameterSetName='ByStorageSite')]
-    [Parameter(ParameterSetName='ByStorageRack')]
-    [Parameter(ParameterSetName='ByStorageChassis')]
-    [Parameter(ParameterSetName='ByStorageScaleUnit')]
-    [Parameter(ParameterSetName='ByStorageEnclosure')]
-    [Parameter(ParameterSetName='ByStorageSubsystem')]
-    [Parameter(ParameterSetName='ByName')]
-    [Parameter(ParameterSetName='ByDeviceNumber')]
-    [Parameter(ParameterSetName='ByObjectId')]
-    [Parameter(ParameterSetName='ByUniqueId')]
-    [ValidateNotNullOrEmpty()]
-    [string]
-    ${Manufacturer},
-
-    [Parameter(ParameterSetName='ByVirtualDisk')]
-    [Parameter(ParameterSetName='ByStoragePool')]
-    [Parameter(ParameterSetName='ByStorageNode')]
-    [Parameter(ParameterSetName='ByStorageSite')]
-    [Parameter(ParameterSetName='ByStorageRack')]
-    [Parameter(ParameterSetName='ByStorageChassis')]
-    [Parameter(ParameterSetName='ByStorageScaleUnit')]
-    [Parameter(ParameterSetName='ByStorageEnclosure')]
-    [Parameter(ParameterSetName='ByStorageSubsystem')]
-    [Parameter(ParameterSetName='ByName')]
-    [Parameter(ParameterSetName='ByDeviceNumber')]
-    [Parameter(ParameterSetName='ByObjectId')]
-    [Parameter(ParameterSetName='ByUniqueId')]
-    [ValidateNotNullOrEmpty()]
-    [string]
-    ${Model},
-
-    [Parameter(ParameterSetName='ByVirtualDisk')]
-    [Parameter(ParameterSetName='ByStoragePool')]
-    [Parameter(ParameterSetName='ByStorageNode')]
-    [Parameter(ParameterSetName='ByStorageSite')]
-    [Parameter(ParameterSetName='ByStorageRack')]
-    [Parameter(ParameterSetName='ByStorageChassis')]
-    [Parameter(ParameterSetName='ByStorageScaleUnit')]
-    [Parameter(ParameterSetName='ByStorageEnclosure')]
-    [Parameter(ParameterSetName='ByStorageSubsystem')]
-    [Parameter(ParameterSetName='ByName')]
-    [Parameter(ParameterSetName='ByDeviceNumber')]
-    [Parameter(ParameterSetName='ByObjectId')]
-    [Parameter(ParameterSetName='ByUniqueId')]
-    [bool]
-    ${CanPool},
-
-    [Parameter(ParameterSetName='ByVirtualDisk')]
-    [Parameter(ParameterSetName='ByStoragePool')]
-    [Parameter(ParameterSetName='ByStorageNode')]
-    [Parameter(ParameterSetName='ByStorageSite')]
-    [Parameter(ParameterSetName='ByStorageRack')]
-    [Parameter(ParameterSetName='ByStorageChassis')]
-    [Parameter(ParameterSetName='ByStorageScaleUnit')]
-    [Parameter(ParameterSetName='ByStorageEnclosure')]
-    [Parameter(ParameterSetName='ByStorageSubsystem')]
-    [Parameter(ParameterSetName='ByName')]
-    [Parameter(ParameterSetName='ByDeviceNumber')]
-    [Parameter(ParameterSetName='ByObjectId')]
-    [Parameter(ParameterSetName='ByUniqueId')]
-    [Get-PhysicalDisk.PhysicalDiskHealthStatus]
-    ${HealthStatus},
-
-    [CimSession]
-    ${CimSession})
-
-begin
-{
-    try {
-        $outBuffer = $null
-        if ($PSBoundParameters.TryGetValue('OutBuffer', [ref]$outBuffer))
-        {
-            $PSBoundParameters['OutBuffer'] = 1
+    $index = 0
+    $results = foreach ($d in $devices) {
+        $media = if ($d.type -eq 'loop') {
+            'Unspecified'
+        } elseif ($d.rota -eq '1' -or $d.rota -eq $true) {
+            'HDD'
+        } else {
+            'SSD'
         }
 
-        $wrappedCmd = $ExecutionContext.InvokeCommand.GetCommand('Get-PhysicalDisk', [System.Management.Automation.CommandTypes]::Function)
-        $scriptCmd = {& $wrappedCmd @PSBoundParameters }
-
-        $steppablePipeline = $scriptCmd.GetSteppablePipeline()
-        $steppablePipeline.Begin($PSCmdlet)
-    } catch {
-        throw
+        [PSCustomObject]@{
+            FriendlyName       = if ($d.model)  { $d.model.Trim()  } else { $d.name }
+            SerialNumber       = if ($d.serial) { $d.serial.Trim() } else { '' }
+            MediaType          = $media
+            BusType            = if ($d.tran)  { $d.tran.ToUpper() } else { 'Unknown' }
+            Size               = $d.size
+            IsRemovable        = ($d.rm -eq '1' -or $d.rm -eq $true)
+            OperationalStatus  = if ($d.state) { $d.state } else { 'OK' }
+            DeviceId           = [uint32]$index
+            UniqueId           = if ($d.serial) { $d.serial.Trim() } else { $d.name }
+            Path               = "/dev/$($d.name)"
+            LogicalSectorSize  = if ($d.'log-sec') { [uint32]$d.'log-sec' } else { 512 }
+            PhysicalSectorSize = if ($d.'phy-sec') { [uint32]$d.'phy-sec' } else { 512 }
+        }
+        $index++
     }
-}
 
-process
-{
-    try {
-        $steppablePipeline.Process($_)
-    } catch {
-        throw
+    # Apply filters
+    if ($PSBoundParameters.ContainsKey('FriendlyName')) {
+        $results = $results | Where-Object { $fn = $_.FriendlyName; $FriendlyName | Where-Object { $fn -like $_ } }
     }
-}
-
-end
-{
-    try {
-        $steppablePipeline.End()
-    } catch {
-        throw
+    if ($PSBoundParameters.ContainsKey('SerialNumber')) {
+        $results = $results | Where-Object { $sn = $_.SerialNumber; $SerialNumber | Where-Object { $sn -like $_ } }
     }
-}
-
-clean
-{
-    if ($null -ne $steppablePipeline) {
-        $steppablePipeline.Clean()
+    if ($PSBoundParameters.ContainsKey('MediaType')) {
+        $results = $results | Where-Object { $_.MediaType -eq $MediaType }
     }
+
+    $results
 }
-<#
-
-.ForwardHelpTargetName Get-PhysicalDisk
-.ForwardHelpCategory Function
-
-#>
-
-
-}
-

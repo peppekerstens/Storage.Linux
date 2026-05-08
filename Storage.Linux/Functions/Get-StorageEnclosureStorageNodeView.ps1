@@ -1,71 +1,21 @@
-Function Get-StorageEnclosureStorageNodeView {
+function Get-StorageEnclosureStorageNodeView {
+    <#
+    .Synopsis
+        Not yet implemented on Linux. Delegates to Storage\Get-StorageEnclosureStorageNodeView on Windows.
+    .Notes
+        This is a compatibility stub. On Linux a Write-Warning is emitted.
+        Contributions welcome: https://github.com/peppekerstens/Storage.Linux
+    .Link
+        https://learn.microsoft.com/powershell/module/storage/get-storageenclosurestoragenodeview
+    #>
+    [CmdletBinding()]
+    param()
 
-[CmdletBinding()]
-param(
-    [Parameter(Position=0, ValueFromPipeline=$true)]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#ROOT/Microsoft/Windows/Storage/MSFT_StorageNode')]
-    [ciminstance]
-    ${StorageNode},
-
-    [Parameter(Position=1, ValueFromPipeline=$true)]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#ROOT/Microsoft/Windows/Storage/MSFT_StorageEnclosure')]
-    [ciminstance]
-    ${StorageEnclosure},
-
-    [Parameter(Position=2)]
-    [CimSession]
-    ${CimSession})
-
-begin
-{
-    try {
-        $outBuffer = $null
-        if ($PSBoundParameters.TryGetValue('OutBuffer', [ref]$outBuffer))
-        {
-            $PSBoundParameters['OutBuffer'] = 1
-        }
-
-        $wrappedCmd = $ExecutionContext.InvokeCommand.GetCommand('Get-StorageEnclosureStorageNodeView', [System.Management.Automation.CommandTypes]::Function)
-        $scriptCmd = {& $wrappedCmd @PSBoundParameters }
-
-        $steppablePipeline = $scriptCmd.GetSteppablePipeline()
-        $steppablePipeline.Begin($PSCmdlet)
-    } catch {
-        throw
+    if ($IsLinux) {
+        Write-Warning "Get-StorageEnclosureStorageNodeView is not yet implemented in Storage.Linux. Contributions welcome: https://github.com/peppekerstens/Storage.Linux"
+        return
     }
+
+    # Windows: delegate to built-in Storage module
+    Storage\Get-StorageEnclosureStorageNodeView @PSBoundParameters
 }
-
-process
-{
-    try {
-        $steppablePipeline.Process($_)
-    } catch {
-        throw
-    }
-}
-
-end
-{
-    try {
-        $steppablePipeline.End()
-    } catch {
-        throw
-    }
-}
-
-clean
-{
-    if ($null -ne $steppablePipeline) {
-        $steppablePipeline.Clean()
-    }
-}
-<#
-
-.ForwardHelpTargetName Get-StorageEnclosureStorageNodeView
-.ForwardHelpCategory Function
-
-#>
-
-
-}
-

@@ -1,109 +1,21 @@
-Function Clear-StorageDiagnosticInfo {
+function Clear-StorageDiagnosticInfo {
+    <#
+    .Synopsis
+        Not yet implemented on Linux. Delegates to Storage\Clear-StorageDiagnosticInfo on Windows.
+    .Notes
+        This is a compatibility stub. On Linux a Write-Warning is emitted.
+        Contributions welcome: https://github.com/peppekerstens/Storage.Linux
+    .Link
+        https://learn.microsoft.com/powershell/module/storage/clear-storagediagnosticinfo
+    #>
+    [CmdletBinding()]
+    param()
 
-[CmdletBinding(DefaultParameterSetName='ByFriendlyName', PositionalBinding=$false)]
-param(
-    [Parameter(ParameterSetName='ByUniqueId', Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
-    [Alias('StorageSubsystemId')]
-    [ValidateNotNull()]
-    [string[]]
-    ${StorageSubSystemUniqueId},
-
-    [Parameter(ParameterSetName='ByFriendlyName', Mandatory=$true, Position=0, ValueFromPipelineByPropertyName=$true)]
-    [ValidateNotNull()]
-    [string[]]
-    ${StorageSubSystemFriendlyName},
-
-    [Parameter(ParameterSetName='ByName', Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
-    [ValidateNotNull()]
-    [string[]]
-    ${StorageSubSystemName},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)', Mandatory=$true, ValueFromPipeline=$true)]
-    [ValidateNotNull()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#MSFT_StorageSubSystem')]
-    [ciminstance[]]
-    ${InputObject},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)')]
-    [Parameter(ParameterSetName='ByName')]
-    [Parameter(ParameterSetName='ByFriendlyName')]
-    [Parameter(ParameterSetName='ByUniqueId')]
-    [Alias('Session')]
-    [ValidateNotNullOrEmpty()]
-    [CimSession[]]
-    ${CimSession},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)')]
-    [Parameter(ParameterSetName='ByName')]
-    [Parameter(ParameterSetName='ByFriendlyName')]
-    [Parameter(ParameterSetName='ByUniqueId')]
-    [int]
-    ${ThrottleLimit},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)')]
-    [Parameter(ParameterSetName='ByName')]
-    [Parameter(ParameterSetName='ByFriendlyName')]
-    [Parameter(ParameterSetName='ByUniqueId')]
-    [switch]
-    ${AsJob},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)')]
-    [Parameter(ParameterSetName='ByName')]
-    [Parameter(ParameterSetName='ByFriendlyName')]
-    [Parameter(ParameterSetName='ByUniqueId')]
-    [switch]
-    ${PassThru})
-
-begin
-{
-    try {
-        $outBuffer = $null
-        if ($PSBoundParameters.TryGetValue('OutBuffer', [ref]$outBuffer))
-        {
-            $PSBoundParameters['OutBuffer'] = 1
-        }
-
-        $wrappedCmd = $ExecutionContext.InvokeCommand.GetCommand('Clear-StorageDiagnosticInfo', [System.Management.Automation.CommandTypes]::Function)
-        $scriptCmd = {& $wrappedCmd @PSBoundParameters }
-
-        $steppablePipeline = $scriptCmd.GetSteppablePipeline()
-        $steppablePipeline.Begin($PSCmdlet)
-    } catch {
-        throw
+    if ($IsLinux) {
+        Write-Warning "Clear-StorageDiagnosticInfo is not yet implemented in Storage.Linux. Contributions welcome: https://github.com/peppekerstens/Storage.Linux"
+        return
     }
+
+    # Windows: delegate to built-in Storage module
+    Storage\Clear-StorageDiagnosticInfo @PSBoundParameters
 }
-
-process
-{
-    try {
-        $steppablePipeline.Process($_)
-    } catch {
-        throw
-    }
-}
-
-end
-{
-    try {
-        $steppablePipeline.End()
-    } catch {
-        throw
-    }
-}
-
-clean
-{
-    if ($null -ne $steppablePipeline) {
-        $steppablePipeline.Clean()
-    }
-}
-<#
-
-.ForwardHelpTargetName Clear-StorageDiagnosticInfo
-.ForwardHelpCategory Function
-
-#>
-
-
-}
-

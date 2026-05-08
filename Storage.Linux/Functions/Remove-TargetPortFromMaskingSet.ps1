@@ -1,112 +1,21 @@
-Function Remove-TargetPortFromMaskingSet {
+function Remove-TargetPortFromMaskingSet {
+    <#
+    .Synopsis
+        Not yet implemented on Linux. Delegates to Storage\Remove-TargetPortFromMaskingSet on Windows.
+    .Notes
+        This is a compatibility stub. On Linux a Write-Warning is emitted.
+        Contributions welcome: https://github.com/peppekerstens/Storage.Linux
+    .Link
+        https://learn.microsoft.com/powershell/module/storage/remove-targetportfrommaskingset
+    #>
+    [CmdletBinding()]
+    param()
 
-[CmdletBinding(DefaultParameterSetName='ByFriendlyName', SupportsShouldProcess=$true, ConfirmImpact='Medium', PositionalBinding=$false)]
-param(
-    [Parameter(ParameterSetName='ByUniqueId', Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
-    [Alias('Id')]
-    [ValidateNotNull()]
-    [ValidateNotNullOrEmpty()]
-    [ValidateNotNull()]
-    [string[]]
-    ${MaskingSetUniqueId},
-
-    [Parameter(ParameterSetName='ByFriendlyName', Mandatory=$true, Position=0, ValueFromPipelineByPropertyName=$true)]
-    [ValidateNotNull()]
-    [ValidateNotNullOrEmpty()]
-    [ValidateNotNull()]
-    [string[]]
-    ${MaskingSetFriendlyName},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)', Mandatory=$true, ValueFromPipeline=$true)]
-    [ValidateNotNull()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#MSFT_MaskingSet')]
-    [ciminstance[]]
-    ${InputObject},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)')]
-    [Parameter(ParameterSetName='ByFriendlyName')]
-    [Parameter(ParameterSetName='ByUniqueId')]
-    [ValidateNotNullOrEmpty()]
-    [ValidateNotNull()]
-    [string[]]
-    ${TargetPortAddresses},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)')]
-    [Parameter(ParameterSetName='ByFriendlyName')]
-    [Parameter(ParameterSetName='ByUniqueId')]
-    [Alias('Session')]
-    [ValidateNotNullOrEmpty()]
-    [CimSession[]]
-    ${CimSession},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)')]
-    [Parameter(ParameterSetName='ByFriendlyName')]
-    [Parameter(ParameterSetName='ByUniqueId')]
-    [int]
-    ${ThrottleLimit},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)')]
-    [Parameter(ParameterSetName='ByFriendlyName')]
-    [Parameter(ParameterSetName='ByUniqueId')]
-    [switch]
-    ${AsJob},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)')]
-    [Parameter(ParameterSetName='ByFriendlyName')]
-    [Parameter(ParameterSetName='ByUniqueId')]
-    [switch]
-    ${PassThru})
-
-begin
-{
-    try {
-        $outBuffer = $null
-        if ($PSBoundParameters.TryGetValue('OutBuffer', [ref]$outBuffer))
-        {
-            $PSBoundParameters['OutBuffer'] = 1
-        }
-
-        $wrappedCmd = $ExecutionContext.InvokeCommand.GetCommand('Remove-TargetPortFromMaskingSet', [System.Management.Automation.CommandTypes]::Function)
-        $scriptCmd = {& $wrappedCmd @PSBoundParameters }
-
-        $steppablePipeline = $scriptCmd.GetSteppablePipeline()
-        $steppablePipeline.Begin($PSCmdlet)
-    } catch {
-        throw
+    if ($IsLinux) {
+        Write-Warning "Remove-TargetPortFromMaskingSet is not yet implemented in Storage.Linux. Contributions welcome: https://github.com/peppekerstens/Storage.Linux"
+        return
     }
+
+    # Windows: delegate to built-in Storage module
+    Storage\Remove-TargetPortFromMaskingSet @PSBoundParameters
 }
-
-process
-{
-    try {
-        $steppablePipeline.Process($_)
-    } catch {
-        throw
-    }
-}
-
-end
-{
-    try {
-        $steppablePipeline.End()
-    } catch {
-        throw
-    }
-}
-
-clean
-{
-    if ($null -ne $steppablePipeline) {
-        $steppablePipeline.Clean()
-    }
-}
-<#
-
-.ForwardHelpTargetName Remove-TargetPortFromMaskingSet
-.ForwardHelpCategory Function
-
-#>
-
-
-}
-

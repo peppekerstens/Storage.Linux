@@ -1,100 +1,21 @@
-Function Stop-StorageJob {
+function Stop-StorageJob {
+    <#
+    .Synopsis
+        Not yet implemented on Linux. Delegates to Storage\Stop-StorageJob on Windows.
+    .Notes
+        This is a compatibility stub. On Linux a Write-Warning is emitted.
+        Contributions welcome: https://github.com/peppekerstens/Storage.Linux
+    .Link
+        https://learn.microsoft.com/powershell/module/storage/stop-storagejob
+    #>
+    [CmdletBinding()]
+    param()
 
-[CmdletBinding(DefaultParameterSetName='ByFriendlyName', SupportsShouldProcess=$true, ConfirmImpact='Medium', PositionalBinding=$false)]
-param(
-    [Parameter(ParameterSetName='ByUniqueId', Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
-    [Alias('Id')]
-    [ValidateNotNull()]
-    [string[]]
-    ${UniqueId},
-
-    [Parameter(ParameterSetName='ByName', Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
-    [ValidateNotNull()]
-    [string[]]
-    ${Name},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)', Mandatory=$true, ValueFromPipeline=$true)]
-    [ValidateNotNull()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#MSFT_StorageJob')]
-    [ciminstance[]]
-    ${InputObject},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)')]
-    [Parameter(ParameterSetName='ByName')]
-    [Parameter(ParameterSetName='ByUniqueId')]
-    [Alias('Session')]
-    [ValidateNotNullOrEmpty()]
-    [CimSession[]]
-    ${CimSession},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)')]
-    [Parameter(ParameterSetName='ByName')]
-    [Parameter(ParameterSetName='ByUniqueId')]
-    [int]
-    ${ThrottleLimit},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)')]
-    [Parameter(ParameterSetName='ByName')]
-    [Parameter(ParameterSetName='ByUniqueId')]
-    [switch]
-    ${AsJob},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)')]
-    [Parameter(ParameterSetName='ByName')]
-    [Parameter(ParameterSetName='ByUniqueId')]
-    [switch]
-    ${PassThru})
-
-begin
-{
-    try {
-        $outBuffer = $null
-        if ($PSBoundParameters.TryGetValue('OutBuffer', [ref]$outBuffer))
-        {
-            $PSBoundParameters['OutBuffer'] = 1
-        }
-
-        $wrappedCmd = $ExecutionContext.InvokeCommand.GetCommand('Stop-StorageJob', [System.Management.Automation.CommandTypes]::Function)
-        $scriptCmd = {& $wrappedCmd @PSBoundParameters }
-
-        $steppablePipeline = $scriptCmd.GetSteppablePipeline()
-        $steppablePipeline.Begin($PSCmdlet)
-    } catch {
-        throw
+    if ($IsLinux) {
+        Write-Warning "Stop-StorageJob is not yet implemented in Storage.Linux. Contributions welcome: https://github.com/peppekerstens/Storage.Linux"
+        return
     }
+
+    # Windows: delegate to built-in Storage module
+    Storage\Stop-StorageJob @PSBoundParameters
 }
-
-process
-{
-    try {
-        $steppablePipeline.Process($_)
-    } catch {
-        throw
-    }
-}
-
-end
-{
-    try {
-        $steppablePipeline.End()
-    } catch {
-        throw
-    }
-}
-
-clean
-{
-    if ($null -ne $steppablePipeline) {
-        $steppablePipeline.Clean()
-    }
-}
-<#
-
-.ForwardHelpTargetName Stop-StorageJob
-.ForwardHelpCategory Function
-
-#>
-
-
-}
-

@@ -1,159 +1,21 @@
-Function Optimize-Volume {
+function Optimize-Volume {
+    <#
+    .Synopsis
+        Not yet implemented on Linux. Delegates to Storage\Optimize-Volume on Windows.
+    .Notes
+        This is a compatibility stub. On Linux a Write-Warning is emitted.
+        Contributions welcome: https://github.com/peppekerstens/Storage.Linux
+    .Link
+        https://learn.microsoft.com/powershell/module/storage/optimize-volume
+    #>
+    [CmdletBinding()]
+    param()
 
-[CmdletBinding(DefaultParameterSetName='ByDriveLetter', SupportsShouldProcess=$true, ConfirmImpact='Medium', PositionalBinding=$false)]
-param(
-    [Parameter(ParameterSetName='ById', Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
-    [Alias('Id')]
-    [ValidateNotNull()]
-    [string[]]
-    ${ObjectId},
-
-    [Parameter(ParameterSetName='ByPaths', Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
-    [ValidateNotNull()]
-    [string[]]
-    ${Path},
-
-    [Parameter(ParameterSetName='ByLabel', Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
-    [Alias('FriendlyName')]
-    [ValidateNotNull()]
-    [string[]]
-    ${FileSystemLabel},
-
-    [Parameter(ParameterSetName='ByDriveLetter', Mandatory=$true, Position=0, ValueFromPipelineByPropertyName=$true)]
-    [ValidateNotNull()]
-    [char[]]
-    ${DriveLetter},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)', Mandatory=$true, ValueFromPipeline=$true)]
-    [ValidateNotNull()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#MSFT_Volume')]
-    [ciminstance[]]
-    ${InputObject},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)')]
-    [Parameter(ParameterSetName='ByDriveLetter')]
-    [Parameter(ParameterSetName='ByLabel')]
-    [Parameter(ParameterSetName='ByPaths')]
-    [Parameter(ParameterSetName='ById')]
-    [switch]
-    ${ReTrim},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)')]
-    [Parameter(ParameterSetName='ByDriveLetter')]
-    [Parameter(ParameterSetName='ByLabel')]
-    [Parameter(ParameterSetName='ByPaths')]
-    [Parameter(ParameterSetName='ById')]
-    [switch]
-    ${Analyze},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)')]
-    [Parameter(ParameterSetName='ByDriveLetter')]
-    [Parameter(ParameterSetName='ByLabel')]
-    [Parameter(ParameterSetName='ByPaths')]
-    [Parameter(ParameterSetName='ById')]
-    [switch]
-    ${Defrag},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)')]
-    [Parameter(ParameterSetName='ByDriveLetter')]
-    [Parameter(ParameterSetName='ByLabel')]
-    [Parameter(ParameterSetName='ByPaths')]
-    [Parameter(ParameterSetName='ById')]
-    [switch]
-    ${SlabConsolidate},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)')]
-    [Parameter(ParameterSetName='ByDriveLetter')]
-    [Parameter(ParameterSetName='ByLabel')]
-    [Parameter(ParameterSetName='ByPaths')]
-    [Parameter(ParameterSetName='ById')]
-    [switch]
-    ${TierOptimize},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)')]
-    [Parameter(ParameterSetName='ByDriveLetter')]
-    [Parameter(ParameterSetName='ByLabel')]
-    [Parameter(ParameterSetName='ByPaths')]
-    [Parameter(ParameterSetName='ById')]
-    [switch]
-    ${NormalPriority},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)')]
-    [Parameter(ParameterSetName='ByDriveLetter')]
-    [Parameter(ParameterSetName='ByLabel')]
-    [Parameter(ParameterSetName='ByPaths')]
-    [Parameter(ParameterSetName='ById')]
-    [Alias('Session')]
-    [ValidateNotNullOrEmpty()]
-    [CimSession[]]
-    ${CimSession},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)')]
-    [Parameter(ParameterSetName='ByDriveLetter')]
-    [Parameter(ParameterSetName='ByLabel')]
-    [Parameter(ParameterSetName='ByPaths')]
-    [Parameter(ParameterSetName='ById')]
-    [int]
-    ${ThrottleLimit},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)')]
-    [Parameter(ParameterSetName='ByDriveLetter')]
-    [Parameter(ParameterSetName='ByLabel')]
-    [Parameter(ParameterSetName='ByPaths')]
-    [Parameter(ParameterSetName='ById')]
-    [switch]
-    ${AsJob})
-
-begin
-{
-    try {
-        $outBuffer = $null
-        if ($PSBoundParameters.TryGetValue('OutBuffer', [ref]$outBuffer))
-        {
-            $PSBoundParameters['OutBuffer'] = 1
-        }
-
-        $wrappedCmd = $ExecutionContext.InvokeCommand.GetCommand('Optimize-Volume', [System.Management.Automation.CommandTypes]::Function)
-        $scriptCmd = {& $wrappedCmd @PSBoundParameters }
-
-        $steppablePipeline = $scriptCmd.GetSteppablePipeline()
-        $steppablePipeline.Begin($PSCmdlet)
-    } catch {
-        throw
+    if ($IsLinux) {
+        Write-Warning "Optimize-Volume is not yet implemented in Storage.Linux. Contributions welcome: https://github.com/peppekerstens/Storage.Linux"
+        return
     }
+
+    # Windows: delegate to built-in Storage module
+    Storage\Optimize-Volume @PSBoundParameters
 }
-
-process
-{
-    try {
-        $steppablePipeline.Process($_)
-    } catch {
-        throw
-    }
-}
-
-end
-{
-    try {
-        $steppablePipeline.End()
-    } catch {
-        throw
-    }
-}
-
-clean
-{
-    if ($null -ne $steppablePipeline) {
-        $steppablePipeline.Clean()
-    }
-}
-<#
-
-.ForwardHelpTargetName Optimize-Volume
-.ForwardHelpCategory Function
-
-#>
-
-
-}
-

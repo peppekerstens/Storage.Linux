@@ -1,71 +1,21 @@
-Function Get-StorageSetting {
+function Get-StorageSetting {
+    <#
+    .Synopsis
+        Not yet implemented on Linux. Delegates to Storage\Get-StorageSetting on Windows.
+    .Notes
+        This is a compatibility stub. On Linux a Write-Warning is emitted.
+        Contributions welcome: https://github.com/peppekerstens/Storage.Linux
+    .Link
+        https://learn.microsoft.com/powershell/module/storage/get-storagesetting
+    #>
+    [CmdletBinding()]
+    param()
 
-[CmdletBinding(PositionalBinding=$false)]
-param(
-    [Parameter(ParameterSetName='Get0')]
-    [Alias('Session')]
-    [ValidateNotNullOrEmpty()]
-    [CimSession[]]
-    ${CimSession},
-
-    [Parameter(ParameterSetName='Get0')]
-    [int]
-    ${ThrottleLimit},
-
-    [Parameter(ParameterSetName='Get0')]
-    [switch]
-    ${AsJob})
-
-begin
-{
-    try {
-        $outBuffer = $null
-        if ($PSBoundParameters.TryGetValue('OutBuffer', [ref]$outBuffer))
-        {
-            $PSBoundParameters['OutBuffer'] = 1
-        }
-
-        $wrappedCmd = $ExecutionContext.InvokeCommand.GetCommand('Get-StorageSetting', [System.Management.Automation.CommandTypes]::Function)
-        $scriptCmd = {& $wrappedCmd @PSBoundParameters }
-
-        $steppablePipeline = $scriptCmd.GetSteppablePipeline()
-        $steppablePipeline.Begin($PSCmdlet)
-    } catch {
-        throw
+    if ($IsLinux) {
+        Write-Warning "Get-StorageSetting is not yet implemented in Storage.Linux. Contributions welcome: https://github.com/peppekerstens/Storage.Linux"
+        return
     }
+
+    # Windows: delegate to built-in Storage module
+    Storage\Get-StorageSetting @PSBoundParameters
 }
-
-process
-{
-    try {
-        $steppablePipeline.Process($_)
-    } catch {
-        throw
-    }
-}
-
-end
-{
-    try {
-        $steppablePipeline.End()
-    } catch {
-        throw
-    }
-}
-
-clean
-{
-    if ($null -ne $steppablePipeline) {
-        $steppablePipeline.Clean()
-    }
-}
-<#
-
-.ForwardHelpTargetName Get-StorageSetting
-.ForwardHelpCategory Function
-
-#>
-
-
-}
-

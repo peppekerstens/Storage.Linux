@@ -1,135 +1,21 @@
-Function Get-InitiatorPort {
+function Get-InitiatorPort {
+    <#
+    .Synopsis
+        Not yet implemented on Linux. Delegates to Storage\Get-InitiatorPort on Windows.
+    .Notes
+        This is a compatibility stub. On Linux a Write-Warning is emitted.
+        Contributions welcome: https://github.com/peppekerstens/Storage.Linux
+    .Link
+        https://learn.microsoft.com/powershell/module/storage/get-initiatorport
+    #>
+    [CmdletBinding()]
+    param()
 
-[CmdletBinding(DefaultParameterSetName='ByNodeAddress', PositionalBinding=$false)]
-param(
-    [Parameter(ParameterSetName='ByObjectId', ValueFromPipelineByPropertyName=$true)]
-    [Alias('Id')]
-    [ValidateNotNull()]
-    [string[]]
-    ${ObjectId},
-
-    [Parameter(ParameterSetName='ByNodeAddress', Position=0, ValueFromPipelineByPropertyName=$true)]
-    [ValidateNotNull()]
-    [string[]]
-    ${NodeAddress},
-
-    [Parameter(ParameterSetName='ByInstanceName', ValueFromPipelineByPropertyName=$true)]
-    [ValidateNotNull()]
-    [string[]]
-    ${InstanceName},
-
-    [Parameter(ParameterSetName='ByInstanceName', ValueFromPipelineByPropertyName=$true)]
-    [Parameter(ParameterSetName='ByNodeAddress', ValueFromPipelineByPropertyName=$true)]
-    [ValidateNotNull()]
-    [Microsoft.PowerShell.Cmdletization.GeneratedTypes.InitiatorPort.ConnectionType[]]
-    ${ConnectionType},
-
-    [Parameter(ParameterSetName='ByVirtualDisk', ValueFromPipeline=$true)]
-    [ValidateNotNull()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#MSFT_VirtualDisk')]
-    [ciminstance]
-    ${VirtualDisk},
-
-    [Parameter(ParameterSetName='ByiSCSISession', ValueFromPipeline=$true)]
-    [ValidateNotNull()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#MSFT_iSCSISession')]
-    [ciminstance]
-    ${iSCSISession},
-
-    [Parameter(ParameterSetName='ByiSCSIConnection', ValueFromPipeline=$true)]
-    [ValidateNotNull()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#MSFT_iSCSIConnection')]
-    [ciminstance]
-    ${iSCSIConnection},
-
-    [Parameter(ParameterSetName='ByiSCSITarget', ValueFromPipeline=$true)]
-    [ValidateNotNull()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#MSFT_iSCSITarget')]
-    [ciminstance]
-    ${iSCSITarget},
-
-    [Parameter(ParameterSetName='ByiSCSITarget')]
-    [Parameter(ParameterSetName='ByiSCSIConnection')]
-    [Parameter(ParameterSetName='ByiSCSISession')]
-    [Parameter(ParameterSetName='ByVirtualDisk')]
-    [Parameter(ParameterSetName='ByInstanceName')]
-    [Parameter(ParameterSetName='ByNodeAddress')]
-    [Parameter(ParameterSetName='ByObjectId')]
-    [Alias('Session')]
-    [ValidateNotNullOrEmpty()]
-    [CimSession[]]
-    ${CimSession},
-
-    [Parameter(ParameterSetName='ByiSCSITarget')]
-    [Parameter(ParameterSetName='ByiSCSIConnection')]
-    [Parameter(ParameterSetName='ByiSCSISession')]
-    [Parameter(ParameterSetName='ByVirtualDisk')]
-    [Parameter(ParameterSetName='ByInstanceName')]
-    [Parameter(ParameterSetName='ByNodeAddress')]
-    [Parameter(ParameterSetName='ByObjectId')]
-    [int]
-    ${ThrottleLimit},
-
-    [Parameter(ParameterSetName='ByiSCSITarget')]
-    [Parameter(ParameterSetName='ByiSCSIConnection')]
-    [Parameter(ParameterSetName='ByiSCSISession')]
-    [Parameter(ParameterSetName='ByVirtualDisk')]
-    [Parameter(ParameterSetName='ByInstanceName')]
-    [Parameter(ParameterSetName='ByNodeAddress')]
-    [Parameter(ParameterSetName='ByObjectId')]
-    [switch]
-    ${AsJob})
-
-begin
-{
-    try {
-        $outBuffer = $null
-        if ($PSBoundParameters.TryGetValue('OutBuffer', [ref]$outBuffer))
-        {
-            $PSBoundParameters['OutBuffer'] = 1
-        }
-
-        $wrappedCmd = $ExecutionContext.InvokeCommand.GetCommand('Get-InitiatorPort', [System.Management.Automation.CommandTypes]::Function)
-        $scriptCmd = {& $wrappedCmd @PSBoundParameters }
-
-        $steppablePipeline = $scriptCmd.GetSteppablePipeline()
-        $steppablePipeline.Begin($PSCmdlet)
-    } catch {
-        throw
+    if ($IsLinux) {
+        Write-Warning "Get-InitiatorPort is not yet implemented in Storage.Linux. Contributions welcome: https://github.com/peppekerstens/Storage.Linux"
+        return
     }
+
+    # Windows: delegate to built-in Storage module
+    Storage\Get-InitiatorPort @PSBoundParameters
 }
-
-process
-{
-    try {
-        $steppablePipeline.Process($_)
-    } catch {
-        throw
-    }
-}
-
-end
-{
-    try {
-        $steppablePipeline.End()
-    } catch {
-        throw
-    }
-}
-
-clean
-{
-    if ($null -ne $steppablePipeline) {
-        $steppablePipeline.Clean()
-    }
-}
-<#
-
-.ForwardHelpTargetName Get-InitiatorPort
-.ForwardHelpCategory Function
-
-#>
-
-
-}
-

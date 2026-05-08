@@ -1,97 +1,21 @@
-Function Get-DiskImage {
+function Get-DiskImage {
+    <#
+    .Synopsis
+        Not yet implemented on Linux. Delegates to Storage\Get-DiskImage on Windows.
+    .Notes
+        This is a compatibility stub. On Linux a Write-Warning is emitted.
+        Contributions welcome: https://github.com/peppekerstens/Storage.Linux
+    .Link
+        https://learn.microsoft.com/powershell/module/storage/get-diskimage
+    #>
+    [CmdletBinding()]
+    param()
 
-[CmdletBinding(DefaultParameterSetName='ByImagePath', PositionalBinding=$false)]
-param(
-    [Parameter(ParameterSetName='ByVolume', ValueFromPipeline=$true)]
-    [ValidateNotNull()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#MSFT_Volume')]
-    [ciminstance]
-    ${Volume},
-
-    [Parameter(ParameterSetName='ByImagePath', Mandatory=$true, Position=0, ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true)]
-    [string[]]
-    ${ImagePath},
-
-    [Parameter(ParameterSetName='ByDevicePath', Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
-    [string[]]
-    ${DevicePath},
-
-    [Parameter(ParameterSetName='ByDevicePath', ValueFromPipelineByPropertyName=$true)]
-    [Parameter(ParameterSetName='ByImagePath', ValueFromPipelineByPropertyName=$true)]
-    [Parameter(ParameterSetName='ByVolume', ValueFromPipelineByPropertyName=$true)]
-    [Microsoft.PowerShell.Cmdletization.GeneratedTypes.DiskImage.StorageType]
-    ${StorageType},
-
-    [Parameter(ParameterSetName='ByDevicePath')]
-    [Parameter(ParameterSetName='ByImagePath')]
-    [Parameter(ParameterSetName='ByVolume')]
-    [Alias('Session')]
-    [ValidateNotNullOrEmpty()]
-    [CimSession[]]
-    ${CimSession},
-
-    [Parameter(ParameterSetName='ByDevicePath')]
-    [Parameter(ParameterSetName='ByImagePath')]
-    [Parameter(ParameterSetName='ByVolume')]
-    [int]
-    ${ThrottleLimit},
-
-    [Parameter(ParameterSetName='ByDevicePath')]
-    [Parameter(ParameterSetName='ByImagePath')]
-    [Parameter(ParameterSetName='ByVolume')]
-    [switch]
-    ${AsJob})
-
-begin
-{
-    try {
-        $outBuffer = $null
-        if ($PSBoundParameters.TryGetValue('OutBuffer', [ref]$outBuffer))
-        {
-            $PSBoundParameters['OutBuffer'] = 1
-        }
-
-        $wrappedCmd = $ExecutionContext.InvokeCommand.GetCommand('Get-DiskImage', [System.Management.Automation.CommandTypes]::Function)
-        $scriptCmd = {& $wrappedCmd @PSBoundParameters }
-
-        $steppablePipeline = $scriptCmd.GetSteppablePipeline()
-        $steppablePipeline.Begin($PSCmdlet)
-    } catch {
-        throw
+    if ($IsLinux) {
+        Write-Warning "Get-DiskImage is not yet implemented in Storage.Linux. Contributions welcome: https://github.com/peppekerstens/Storage.Linux"
+        return
     }
+
+    # Windows: delegate to built-in Storage module
+    Storage\Get-DiskImage @PSBoundParameters
 }
-
-process
-{
-    try {
-        $steppablePipeline.Process($_)
-    } catch {
-        throw
-    }
-}
-
-end
-{
-    try {
-        $steppablePipeline.End()
-    } catch {
-        throw
-    }
-}
-
-clean
-{
-    if ($null -ne $steppablePipeline) {
-        $steppablePipeline.Clean()
-    }
-}
-<#
-
-.ForwardHelpTargetName Get-DiskImage
-.ForwardHelpCategory Function
-
-#>
-
-
-}
-

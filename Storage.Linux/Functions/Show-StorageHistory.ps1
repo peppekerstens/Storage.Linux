@@ -1,75 +1,21 @@
-Function Show-StorageHistory {
+function Show-StorageHistory {
+    <#
+    .Synopsis
+        Not yet implemented on Linux. Delegates to Storage\Show-StorageHistory on Windows.
+    .Notes
+        This is a compatibility stub. On Linux a Write-Warning is emitted.
+        Contributions welcome: https://github.com/peppekerstens/Storage.Linux
+    .Link
+        https://learn.microsoft.com/powershell/module/storage/show-storagehistory
+    #>
+    [CmdletBinding()]
+    param()
 
-[CmdletBinding()]
-param(
-    [Parameter(ParameterSetName='ByObjects', Mandatory=$true, Position=0)]
-    [ValidateNotNullOrEmpty()]
-    [System.Collections.ArrayList]
-    ${Objects},
-
-    [Parameter(ParameterSetName='ByObjects')]
-    [ValidateNotNullOrEmpty()]
-    [string]
-    ${Title},
-
-    [Parameter(ParameterSetName='ByObjects')]
-    [switch]
-    ${DisplayAvgLatency},
-
-    [Parameter(ParameterSetName='ByObjects')]
-    [switch]
-    ${DisplayMaxLatency})
-
-begin
-{
-    try {
-        $outBuffer = $null
-        if ($PSBoundParameters.TryGetValue('OutBuffer', [ref]$outBuffer))
-        {
-            $PSBoundParameters['OutBuffer'] = 1
-        }
-
-        $wrappedCmd = $ExecutionContext.InvokeCommand.GetCommand('Show-StorageHistory', [System.Management.Automation.CommandTypes]::Function)
-        $scriptCmd = {& $wrappedCmd @PSBoundParameters }
-
-        $steppablePipeline = $scriptCmd.GetSteppablePipeline()
-        $steppablePipeline.Begin($PSCmdlet)
-    } catch {
-        throw
+    if ($IsLinux) {
+        Write-Warning "Show-StorageHistory is not yet implemented in Storage.Linux. Contributions welcome: https://github.com/peppekerstens/Storage.Linux"
+        return
     }
+
+    # Windows: delegate to built-in Storage module
+    Storage\Show-StorageHistory @PSBoundParameters
 }
-
-process
-{
-    try {
-        $steppablePipeline.Process($_)
-    } catch {
-        throw
-    }
-}
-
-end
-{
-    try {
-        $steppablePipeline.End()
-    } catch {
-        throw
-    }
-}
-
-clean
-{
-    if ($null -ne $steppablePipeline) {
-        $steppablePipeline.Clean()
-    }
-}
-<#
-
-.ForwardHelpTargetName Show-StorageHistory
-.ForwardHelpCategory Function
-
-#>
-
-
-}
-

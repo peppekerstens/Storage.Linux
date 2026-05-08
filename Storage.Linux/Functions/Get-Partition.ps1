@@ -1,139 +1,85 @@
-Function Get-Partition {
+function Get-Partition {
+    <#
+    .Synopsis
+        Returns a list of all partition objects visible on all disks, or optionally a filtered list.
+    .Description
+        Cross-platform implementation of Get-Partition.
+        On Windows, delegates to the built-in Storage\Get-Partition cmdlet.
+        On Linux, wraps lsblk to return partition-type block devices with properties
+        matching the Windows MSFT_Partition object shape as closely as possible.
+    .Parameter DiskNumber
+        Returns partitions on the specified disk number(s).
+    .Parameter DriveLetter
+        Filter by drive letter (not applicable on Linux; accepted for compatibility).
+    .Notes
+        Free to use under GNU v3 Public License (https://choosealicense.com/licenses/gpl-3.0/)
+        Author: Peppe Kerstens (NLD)
+        Version: 1.0.0
+        Date: 2025-07-17
+    .Link
+        https://learn.microsoft.com/powershell/module/storage/get-partition
+    #>
+    [CmdletBinding(DefaultParameterSetName='Default')]
+    param(
+        [Parameter(ParameterSetName='ByDiskNumber', Position=0, ValueFromPipelineByPropertyName=$true)]
+        [uint32[]]$DiskNumber,
 
-[CmdletBinding(DefaultParameterSetName='ByUniqueId', PositionalBinding=$false)]
-param(
-    [Parameter(ParameterSetName='ByUniqueId', ValueFromPipelineByPropertyName=$true)]
-    [ValidateNotNull()]
-    [string[]]
-    ${UniqueId},
+        [Parameter(ParameterSetName='ByDriveLetter')]
+        [char[]]$DriveLetter
+    )
 
-    [Parameter(ParameterSetName='ById', Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
-    [Alias('DiskPath')]
-    [ValidateNotNull()]
-    [string[]]
-    ${DiskId},
+    if (-not $IsLinux) {
+        $params = @{}
+        if ($PSBoundParameters.ContainsKey('DiskNumber'))  { $params['DiskNumber']  = $DiskNumber }
+        if ($PSBoundParameters.ContainsKey('DriveLetter')) { $params['DriveLetter'] = $DriveLetter }
+        Storage\Get-Partition @params
+        return
+    }
 
-    [Parameter(ParameterSetName='ById', ValueFromPipelineByPropertyName=$true)]
-    [ValidateNotNull()]
-    [ulong[]]
-    ${Offset},
+    if (-not (Get-Command lsblk -ErrorAction SilentlyContinue)) {
+        throw "Get-Partition: 'lsblk' not found. Install util-linux: sudo apt-get install util-linux"
+    }
 
-    [Parameter(ParameterSetName='ByNumber', Position=0, ValueFromPipelineByPropertyName=$true)]
-    [ValidateNotNull()]
-    [uint[]]
-    ${DiskNumber},
+    $json = lsblk --json --output NAME,SIZE,TYPE,FSTYPE,MOUNTPOINT,UUID,PARTUUID,PARTTYPE,LABEL,RM,RO 2>$null
+    if (-not $json) { return }
 
-    [Parameter(ParameterSetName='ByNumber', Position=1)]
-    [Alias('Number')]
-    [ValidateNotNull()]
-    [uint[]]
-    ${PartitionNumber},
+    $allDevices = ($json | ConvertFrom-Json).blockdevices
 
-    [Parameter(ParameterSetName='ByDriveLetter', ValueFromPipelineByPropertyName=$true)]
-    [ValidateNotNull()]
-    [char[]]
-    ${DriveLetter},
+    # Build a flat list of all partitions with their parent disk number
+    $diskIndex = 0
+    $results = foreach ($disk in $allDevices) {
+        if ($disk.type -ne 'disk') { $diskIndex++; continue }
 
-    [Parameter(ParameterSetName='ByDisk', ValueFromPipeline=$true)]
-    [ValidateNotNull()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#MSFT_Disk')]
-    [ciminstance]
-    ${Disk},
+        if ($disk.children) {
+            $partIndex = 0
+            foreach ($part in $disk.children) {
+                if ($part.type -notin 'part','lvm','md','crypt') { $partIndex++; continue }
 
-    [Parameter(ParameterSetName='ByVolume', ValueFromPipeline=$true)]
-    [ValidateNotNull()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#MSFT_Volume')]
-    [ciminstance]
-    ${Volume},
-
-    [Parameter(ParameterSetName='ByStorageSubSystem', ValueFromPipeline=$true)]
-    [ValidateNotNull()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#MSFT_StorageSubSystem')]
-    [ciminstance]
-    ${StorageSubSystem},
-
-    [Parameter(ParameterSetName='ByStorageSubSystem')]
-    [Parameter(ParameterSetName='ByVolume')]
-    [Parameter(ParameterSetName='ByDisk')]
-    [Parameter(ParameterSetName='ByDriveLetter')]
-    [Parameter(ParameterSetName='ByNumber')]
-    [Parameter(ParameterSetName='ById')]
-    [Parameter(ParameterSetName='ByUniqueId')]
-    [Alias('Session')]
-    [ValidateNotNullOrEmpty()]
-    [CimSession[]]
-    ${CimSession},
-
-    [Parameter(ParameterSetName='ByStorageSubSystem')]
-    [Parameter(ParameterSetName='ByVolume')]
-    [Parameter(ParameterSetName='ByDisk')]
-    [Parameter(ParameterSetName='ByDriveLetter')]
-    [Parameter(ParameterSetName='ByNumber')]
-    [Parameter(ParameterSetName='ById')]
-    [Parameter(ParameterSetName='ByUniqueId')]
-    [int]
-    ${ThrottleLimit},
-
-    [Parameter(ParameterSetName='ByStorageSubSystem')]
-    [Parameter(ParameterSetName='ByVolume')]
-    [Parameter(ParameterSetName='ByDisk')]
-    [Parameter(ParameterSetName='ByDriveLetter')]
-    [Parameter(ParameterSetName='ByNumber')]
-    [Parameter(ParameterSetName='ById')]
-    [Parameter(ParameterSetName='ByUniqueId')]
-    [switch]
-    ${AsJob})
-
-begin
-{
-    try {
-        $outBuffer = $null
-        if ($PSBoundParameters.TryGetValue('OutBuffer', [ref]$outBuffer))
-        {
-            $PSBoundParameters['OutBuffer'] = 1
+                [PSCustomObject]@{
+                    DiskNumber       = [uint32]$diskIndex
+                    PartitionNumber  = [uint32]$partIndex
+                    DriveLetter      = $null   # not applicable on Linux
+                    IsReadOnly       = ($part.ro -eq '1' -or $part.ro -eq $true)
+                    IsRemovable      = ($part.rm -eq '1' -or $part.rm -eq $true)
+                    Size             = $part.size
+                    Type             = if ($part.parttype) { $part.parttype } else { $part.type }
+                    FileSystem       = if ($part.fstype)   { $part.fstype }   else { '' }
+                    MountPoint       = if ($part.mountpoint) { $part.mountpoint } else { '' }
+                    UniqueId         = if ($part.partuuid) { $part.partuuid } elseif ($part.uuid) { $part.uuid } else { $part.name }
+                    Guid             = if ($part.partuuid) { $part.partuuid } else { '' }
+                    Label            = if ($part.label)    { $part.label }    else { '' }
+                    Path             = "/dev/$($part.name)"
+                }
+                $partIndex++
+            }
         }
-
-        $wrappedCmd = $ExecutionContext.InvokeCommand.GetCommand('Get-Partition', [System.Management.Automation.CommandTypes]::Function)
-        $scriptCmd = {& $wrappedCmd @PSBoundParameters }
-
-        $steppablePipeline = $scriptCmd.GetSteppablePipeline()
-        $steppablePipeline.Begin($PSCmdlet)
-    } catch {
-        throw
+        $diskIndex++
     }
-}
 
-process
-{
-    try {
-        $steppablePipeline.Process($_)
-    } catch {
-        throw
+    # Apply filters
+    if ($PSCmdlet.ParameterSetName -eq 'ByDiskNumber' -and $PSBoundParameters.ContainsKey('DiskNumber')) {
+        $results = $results | Where-Object { $_.DiskNumber -in $DiskNumber }
     }
+
+    $results
 }
-
-end
-{
-    try {
-        $steppablePipeline.End()
-    } catch {
-        throw
-    }
-}
-
-clean
-{
-    if ($null -ne $steppablePipeline) {
-        $steppablePipeline.Clean()
-    }
-}
-<#
-
-.ForwardHelpTargetName Get-Partition
-.ForwardHelpCategory Function
-
-#>
-
-
-}
-

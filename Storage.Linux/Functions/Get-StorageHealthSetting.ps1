@@ -1,74 +1,21 @@
-Function Get-StorageHealthSetting {
+function Get-StorageHealthSetting {
+    <#
+    .Synopsis
+        Not yet implemented on Linux. Delegates to Storage\Get-StorageHealthSetting on Windows.
+    .Notes
+        This is a compatibility stub. On Linux a Write-Warning is emitted.
+        Contributions welcome: https://github.com/peppekerstens/Storage.Linux
+    .Link
+        https://learn.microsoft.com/powershell/module/storage/get-storagehealthsetting
+    #>
+    [CmdletBinding()]
+    param()
 
-[CmdletBinding()]
-param(
-    [Parameter(ParameterSetName='InputObject', Mandatory=$true, ValueFromPipeline=$true)]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#ROOT/Microsoft/Windows/Storage/MSFT_StorageSubSystem')]
-    [ciminstance]
-    ${InputObject},
-
-    [string]
-    ${Name},
-
-    [CimSession]
-    ${CimSession},
-
-    [int]
-    ${ThrottleLimit},
-
-    [switch]
-    ${AsJob})
-
-begin
-{
-    try {
-        $outBuffer = $null
-        if ($PSBoundParameters.TryGetValue('OutBuffer', [ref]$outBuffer))
-        {
-            $PSBoundParameters['OutBuffer'] = 1
-        }
-
-        $wrappedCmd = $ExecutionContext.InvokeCommand.GetCommand('Get-StorageHealthSetting', [System.Management.Automation.CommandTypes]::Function)
-        $scriptCmd = {& $wrappedCmd @PSBoundParameters }
-
-        $steppablePipeline = $scriptCmd.GetSteppablePipeline()
-        $steppablePipeline.Begin($PSCmdlet)
-    } catch {
-        throw
+    if ($IsLinux) {
+        Write-Warning "Get-StorageHealthSetting is not yet implemented in Storage.Linux. Contributions welcome: https://github.com/peppekerstens/Storage.Linux"
+        return
     }
+
+    # Windows: delegate to built-in Storage module
+    Storage\Get-StorageHealthSetting @PSBoundParameters
 }
-
-process
-{
-    try {
-        $steppablePipeline.Process($_)
-    } catch {
-        throw
-    }
-}
-
-end
-{
-    try {
-        $steppablePipeline.End()
-    } catch {
-        throw
-    }
-}
-
-clean
-{
-    if ($null -ne $steppablePipeline) {
-        $steppablePipeline.Clean()
-    }
-}
-<#
-
-.ForwardHelpTargetName Get-StorageHealthSetting
-.ForwardHelpCategory Function
-
-#>
-
-
-}
-

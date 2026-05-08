@@ -1,103 +1,21 @@
-Function Mount-DiskImage {
+function Mount-DiskImage {
+    <#
+    .Synopsis
+        Not yet implemented on Linux. Delegates to Storage\Mount-DiskImage on Windows.
+    .Notes
+        This is a compatibility stub. On Linux a Write-Warning is emitted.
+        Contributions welcome: https://github.com/peppekerstens/Storage.Linux
+    .Link
+        https://learn.microsoft.com/powershell/module/storage/mount-diskimage
+    #>
+    [CmdletBinding()]
+    param()
 
-[CmdletBinding(DefaultParameterSetName='ByImagePath', SupportsShouldProcess=$true, ConfirmImpact='Medium', PositionalBinding=$false)]
-param(
-    [Parameter(ParameterSetName='ByImagePath', Mandatory=$true, Position=0, ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true)]
-    [string[]]
-    ${ImagePath},
-
-    [Parameter(ParameterSetName='ByImagePath', ValueFromPipelineByPropertyName=$true)]
-    [Microsoft.PowerShell.Cmdletization.GeneratedTypes.DiskImage.StorageType]
-    ${StorageType},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)', Mandatory=$true, ValueFromPipeline=$true)]
-    [ValidateNotNull()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#MSFT_DiskImage')]
-    [ciminstance[]]
-    ${InputObject},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)')]
-    [Parameter(ParameterSetName='ByImagePath')]
-    [Microsoft.PowerShell.Cmdletization.GeneratedTypes.DiskImage.Access]
-    ${Access},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)')]
-    [Parameter(ParameterSetName='ByImagePath')]
-    [switch]
-    ${NoDriveLetter},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)')]
-    [Parameter(ParameterSetName='ByImagePath')]
-    [switch]
-    ${PassThru},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)')]
-    [Parameter(ParameterSetName='ByImagePath')]
-    [Alias('Session')]
-    [ValidateNotNullOrEmpty()]
-    [CimSession[]]
-    ${CimSession},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)')]
-    [Parameter(ParameterSetName='ByImagePath')]
-    [int]
-    ${ThrottleLimit},
-
-    [Parameter(ParameterSetName='InputObject (cdxml)')]
-    [Parameter(ParameterSetName='ByImagePath')]
-    [switch]
-    ${AsJob})
-
-begin
-{
-    try {
-        $outBuffer = $null
-        if ($PSBoundParameters.TryGetValue('OutBuffer', [ref]$outBuffer))
-        {
-            $PSBoundParameters['OutBuffer'] = 1
-        }
-
-        $wrappedCmd = $ExecutionContext.InvokeCommand.GetCommand('Mount-DiskImage', [System.Management.Automation.CommandTypes]::Function)
-        $scriptCmd = {& $wrappedCmd @PSBoundParameters }
-
-        $steppablePipeline = $scriptCmd.GetSteppablePipeline()
-        $steppablePipeline.Begin($PSCmdlet)
-    } catch {
-        throw
+    if ($IsLinux) {
+        Write-Warning "Mount-DiskImage is not yet implemented in Storage.Linux. Contributions welcome: https://github.com/peppekerstens/Storage.Linux"
+        return
     }
+
+    # Windows: delegate to built-in Storage module
+    Storage\Mount-DiskImage @PSBoundParameters
 }
-
-process
-{
-    try {
-        $steppablePipeline.Process($_)
-    } catch {
-        throw
-    }
-}
-
-end
-{
-    try {
-        $steppablePipeline.End()
-    } catch {
-        throw
-    }
-}
-
-clean
-{
-    if ($null -ne $steppablePipeline) {
-        $steppablePipeline.Clean()
-    }
-}
-<#
-
-.ForwardHelpTargetName Mount-DiskImage
-.ForwardHelpCategory Function
-
-#>
-
-
-}
-

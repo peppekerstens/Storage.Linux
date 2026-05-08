@@ -1,170 +1,90 @@
-Function Get-Disk {
+function Get-Disk {
+    <#
+    .Synopsis
+        Gets one or more disks visible to the operating system.
+    .Description
+        Cross-platform implementation of Get-Disk.
+        On Windows, delegates to the built-in Storage\Get-Disk cmdlet.
+        On Linux, wraps lsblk to return disk-type block devices with properties
+        matching the Windows MSFT_Disk object shape as closely as possible.
+    .Parameter Number
+        The disk number(s) to retrieve (0-based index of disks returned by lsblk).
+    .Parameter FriendlyName
+        Filter by model/friendly name (wildcard supported).
+    .Parameter SerialNumber
+        Filter by serial number (wildcard supported).
+    .Notes
+        Free to use under GNU v3 Public License (https://choosealicense.com/licenses/gpl-3.0/)
+        Author: Peppe Kerstens (NLD)
+        Version: 1.0.0
+        Date: 2025-07-17
+    .Link
+        https://learn.microsoft.com/powershell/module/storage/get-disk
+    #>
+    [CmdletBinding(DefaultParameterSetName='ByNumber')]
+    param(
+        [Parameter(ParameterSetName='ByNumber', Position=0, ValueFromPipelineByPropertyName=$true)]
+        [Alias('DeviceId')]
+        [uint[]]$Number,
 
-[CmdletBinding(DefaultParameterSetName='ByNumber', PositionalBinding=$false)]
-param(
-    [Parameter(ParameterSetName='ByUniqueId')]
-    [Alias('Id')]
-    [ValidateNotNull()]
-    [string[]]
-    ${UniqueId},
+        [Parameter(ParameterSetName='ByName')]
+        [string[]]$FriendlyName,
 
-    [Parameter(ParameterSetName='ByName')]
-    [ValidateNotNull()]
-    [string[]]
-    ${FriendlyName},
+        [Parameter(ParameterSetName='ByName')]
+        [string[]]$SerialNumber
+    )
 
-    [Parameter(ParameterSetName='ByName')]
-    [ValidateNotNull()]
-    [string[]]
-    ${SerialNumber},
+    if (-not $IsLinux) {
+        # Delegate to Windows built-in
+        $params = @{}
+        if ($PSBoundParameters.ContainsKey('Number'))       { $params['Number']       = $Number }
+        if ($PSBoundParameters.ContainsKey('FriendlyName')) { $params['FriendlyName'] = $FriendlyName }
+        if ($PSBoundParameters.ContainsKey('SerialNumber')) { $params['SerialNumber'] = $SerialNumber }
+        Storage\Get-Disk @params
+        return
+    }
 
-    [Parameter(ParameterSetName='ByPath', ValueFromPipelineByPropertyName=$true)]
-    [ValidateNotNull()]
-    [string[]]
-    ${Path},
+    if (-not (Get-Command lsblk -ErrorAction SilentlyContinue)) {
+        throw "Get-Disk: 'lsblk' not found. Install util-linux: sudo apt-get install util-linux"
+    }
 
-    [Parameter(ParameterSetName='ByNumber', Position=0, ValueFromPipelineByPropertyName=$true)]
-    [Alias('DeviceId')]
-    [ValidateNotNull()]
-    [uint[]]
-    ${Number},
+    $json = lsblk --json --output NAME,SIZE,TYPE,MOUNTPOINT,MODEL,SERIAL,ROTA,RM,STATE,TRAN,VENDOR,PTTYPE,LOG-SEC,PHY-SEC 2>$null
+    if (-not $json) { return }
 
-    [Parameter(ParameterSetName='ByPartition', ValueFromPipeline=$true)]
-    [ValidateNotNull()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#MSFT_Partition')]
-    [ciminstance]
-    ${Partition},
+    $disks = ($json | ConvertFrom-Json).blockdevices | Where-Object { $_.type -eq 'disk' }
 
-    [Parameter(ParameterSetName='ByVirtualDisk', ValueFromPipeline=$true)]
-    [ValidateNotNull()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#MSFT_VirtualDisk')]
-    [ciminstance]
-    ${VirtualDisk},
-
-    [Parameter(ParameterSetName='ByiSCSISession', ValueFromPipeline=$true)]
-    [ValidateNotNull()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#MSFT_iSCSISession')]
-    [ciminstance]
-    ${iSCSISession},
-
-    [Parameter(ParameterSetName='ByiSCSIConnection', ValueFromPipeline=$true)]
-    [ValidateNotNull()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#MSFT_iSCSIConnection')]
-    [ciminstance]
-    ${iSCSIConnection},
-
-    [Parameter(ParameterSetName='ByStorageSubSystem', ValueFromPipeline=$true)]
-    [ValidateNotNull()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#MSFT_StorageSubSystem')]
-    [ciminstance]
-    ${StorageSubSystem},
-
-    [Parameter(ParameterSetName='ByStorageNode', ValueFromPipeline=$true)]
-    [ValidateNotNull()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#MSFT_StorageNode')]
-    [ciminstance]
-    ${StorageNode},
-
-    [Parameter(ParameterSetName='ByStorageJob', ValueFromPipeline=$true)]
-    [ValidateNotNull()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#MSFT_StorageJob')]
-    [ciminstance]
-    ${StorageJob},
-
-    [Parameter(ParameterSetName='ByStorageJob')]
-    [Parameter(ParameterSetName='ByStorageNode')]
-    [Parameter(ParameterSetName='ByStorageSubSystem')]
-    [Parameter(ParameterSetName='ByiSCSIConnection')]
-    [Parameter(ParameterSetName='ByiSCSISession')]
-    [Parameter(ParameterSetName='ByVirtualDisk')]
-    [Parameter(ParameterSetName='ByPartition')]
-    [Parameter(ParameterSetName='ByNumber')]
-    [Parameter(ParameterSetName='ByPath')]
-    [Parameter(ParameterSetName='ByName')]
-    [Parameter(ParameterSetName='ByUniqueId')]
-    [Alias('Session')]
-    [ValidateNotNullOrEmpty()]
-    [CimSession[]]
-    ${CimSession},
-
-    [Parameter(ParameterSetName='ByStorageJob')]
-    [Parameter(ParameterSetName='ByStorageNode')]
-    [Parameter(ParameterSetName='ByStorageSubSystem')]
-    [Parameter(ParameterSetName='ByiSCSIConnection')]
-    [Parameter(ParameterSetName='ByiSCSISession')]
-    [Parameter(ParameterSetName='ByVirtualDisk')]
-    [Parameter(ParameterSetName='ByPartition')]
-    [Parameter(ParameterSetName='ByNumber')]
-    [Parameter(ParameterSetName='ByPath')]
-    [Parameter(ParameterSetName='ByName')]
-    [Parameter(ParameterSetName='ByUniqueId')]
-    [int]
-    ${ThrottleLimit},
-
-    [Parameter(ParameterSetName='ByStorageJob')]
-    [Parameter(ParameterSetName='ByStorageNode')]
-    [Parameter(ParameterSetName='ByStorageSubSystem')]
-    [Parameter(ParameterSetName='ByiSCSIConnection')]
-    [Parameter(ParameterSetName='ByiSCSISession')]
-    [Parameter(ParameterSetName='ByVirtualDisk')]
-    [Parameter(ParameterSetName='ByPartition')]
-    [Parameter(ParameterSetName='ByNumber')]
-    [Parameter(ParameterSetName='ByPath')]
-    [Parameter(ParameterSetName='ByName')]
-    [Parameter(ParameterSetName='ByUniqueId')]
-    [switch]
-    ${AsJob})
-
-begin
-{
-    try {
-        $outBuffer = $null
-        if ($PSBoundParameters.TryGetValue('OutBuffer', [ref]$outBuffer))
-        {
-            $PSBoundParameters['OutBuffer'] = 1
+    $index = 0
+    $results = foreach ($d in $disks) {
+        [PSCustomObject]@{
+            Number          = [uint32]$index
+            FriendlyName    = if ($d.model) { $d.model.Trim() } else { $d.name }
+            SerialNumber    = if ($d.serial) { $d.serial.Trim() } else { '' }
+            Size            = $d.size
+            BusType         = if ($d.tran)  { $d.tran.ToUpper() } else { 'Unknown' }
+            MediaType       = if ($d.rota -eq '1' -or $d.rota -eq $true) { 'HDD' } else { 'SSD' }
+            IsRemovable     = ($d.rm -eq '1' -or $d.rm -eq $true)
+            OperationalStatus = if ($d.state) { $d.state } else { 'OK' }
+            PartitionStyle  = if ($d.pttype) { $d.pttype.ToUpper() } else { 'Unknown' }
+            LogicalSectorSize  = if ($d.'log-sec') { [uint32]$d.'log-sec' } else { 512 }
+            PhysicalSectorSize = if ($d.'phy-sec') { [uint32]$d.'phy-sec' } else { 512 }
+            Path            = "/dev/$($d.name)"
+            UniqueId        = if ($d.serial) { $d.serial.Trim() } else { $d.name }
         }
-
-        $wrappedCmd = $ExecutionContext.InvokeCommand.GetCommand('Get-Disk', [System.Management.Automation.CommandTypes]::Function)
-        $scriptCmd = {& $wrappedCmd @PSBoundParameters }
-
-        $steppablePipeline = $scriptCmd.GetSteppablePipeline()
-        $steppablePipeline.Begin($PSCmdlet)
-    } catch {
-        throw
+        $index++
     }
-}
 
-process
-{
-    try {
-        $steppablePipeline.Process($_)
-    } catch {
-        throw
+    # Apply filters
+    if ($PSCmdlet.ParameterSetName -eq 'ByNumber' -and $PSBoundParameters.ContainsKey('Number')) {
+        $results = $results | Where-Object { $_.Number -in $Number }
     }
-}
-
-end
-{
-    try {
-        $steppablePipeline.End()
-    } catch {
-        throw
+    if ($PSCmdlet.ParameterSetName -eq 'ByName') {
+        if ($PSBoundParameters.ContainsKey('FriendlyName')) {
+            $results = $results | Where-Object { $fn = $_.FriendlyName; $FriendlyName | Where-Object { $fn -like $_ } }
+        }
+        if ($PSBoundParameters.ContainsKey('SerialNumber')) {
+            $results = $results | Where-Object { $sn = $_.SerialNumber; $SerialNumber | Where-Object { $sn -like $_ } }
+        }
     }
+
+    $results
 }
-
-clean
-{
-    if ($null -ne $steppablePipeline) {
-        $steppablePipeline.Clean()
-    }
-}
-<#
-
-.ForwardHelpTargetName Get-Disk
-.ForwardHelpCategory Function
-
-#>
-
-
-}
-

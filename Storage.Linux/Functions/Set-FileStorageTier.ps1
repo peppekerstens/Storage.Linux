@@ -1,103 +1,21 @@
-Function Set-FileStorageTier {
+function Set-FileStorageTier {
+    <#
+    .Synopsis
+        Not yet implemented on Linux. Delegates to Storage\Set-FileStorageTier on Windows.
+    .Notes
+        This is a compatibility stub. On Linux a Write-Warning is emitted.
+        Contributions welcome: https://github.com/peppekerstens/Storage.Linux
+    .Link
+        https://learn.microsoft.com/powershell/module/storage/set-filestoragetier
+    #>
+    [CmdletBinding()]
+    param()
 
-[CmdletBinding(DefaultParameterSetName='ByDesiredStorageTierFriendlyName', SupportsShouldProcess=$true, ConfirmImpact='Medium', PositionalBinding=$false)]
-param(
-    [Parameter(ParameterSetName='ByDesiredStorageTierClass', Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
-    [Parameter(ParameterSetName='ByDesiredStorageTier', Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
-    [Parameter(ParameterSetName='ByDesiredStorageTierFriendlyName', Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
-    [Parameter(ParameterSetName='ByDesiredStorageTierUniqueId', Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
-    [string]
-    ${FilePath},
-
-    [Parameter(ParameterSetName='ByDesiredStorageTierUniqueId', Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
-    [string]
-    ${DesiredStorageTierUniqueId},
-
-    [Parameter(ParameterSetName='ByDesiredStorageTierFriendlyName', Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
-    [string]
-    ${DesiredStorageTierFriendlyName},
-
-    [Parameter(ParameterSetName='ByDesiredStorageTier', Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
-    [ciminstance]
-    ${DesiredStorageTier},
-
-    [Parameter(ParameterSetName='ByDesiredStorageTierClass', Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
-    [Microsoft.PowerShell.Cmdletization.GeneratedTypes.FileStorageTier.StorageTierClass]
-    ${DesiredStorageTierClass},
-
-    [Parameter(ParameterSetName='ByDesiredStorageTierClass')]
-    [Parameter(ParameterSetName='ByDesiredStorageTier')]
-    [Parameter(ParameterSetName='ByDesiredStorageTierFriendlyName')]
-    [Parameter(ParameterSetName='ByDesiredStorageTierUniqueId')]
-    [Alias('Session')]
-    [ValidateNotNullOrEmpty()]
-    [CimSession[]]
-    ${CimSession},
-
-    [Parameter(ParameterSetName='ByDesiredStorageTierClass')]
-    [Parameter(ParameterSetName='ByDesiredStorageTier')]
-    [Parameter(ParameterSetName='ByDesiredStorageTierFriendlyName')]
-    [Parameter(ParameterSetName='ByDesiredStorageTierUniqueId')]
-    [int]
-    ${ThrottleLimit},
-
-    [Parameter(ParameterSetName='ByDesiredStorageTierClass')]
-    [Parameter(ParameterSetName='ByDesiredStorageTier')]
-    [Parameter(ParameterSetName='ByDesiredStorageTierFriendlyName')]
-    [Parameter(ParameterSetName='ByDesiredStorageTierUniqueId')]
-    [switch]
-    ${AsJob})
-
-begin
-{
-    try {
-        $outBuffer = $null
-        if ($PSBoundParameters.TryGetValue('OutBuffer', [ref]$outBuffer))
-        {
-            $PSBoundParameters['OutBuffer'] = 1
-        }
-
-        $wrappedCmd = $ExecutionContext.InvokeCommand.GetCommand('Set-FileStorageTier', [System.Management.Automation.CommandTypes]::Function)
-        $scriptCmd = {& $wrappedCmd @PSBoundParameters }
-
-        $steppablePipeline = $scriptCmd.GetSteppablePipeline()
-        $steppablePipeline.Begin($PSCmdlet)
-    } catch {
-        throw
+    if ($IsLinux) {
+        Write-Warning "Set-FileStorageTier is not yet implemented in Storage.Linux. Contributions welcome: https://github.com/peppekerstens/Storage.Linux"
+        return
     }
+
+    # Windows: delegate to built-in Storage module
+    Storage\Set-FileStorageTier @PSBoundParameters
 }
-
-process
-{
-    try {
-        $steppablePipeline.Process($_)
-    } catch {
-        throw
-    }
-}
-
-end
-{
-    try {
-        $steppablePipeline.End()
-    } catch {
-        throw
-    }
-}
-
-clean
-{
-    if ($null -ne $steppablePipeline) {
-        $steppablePipeline.Clean()
-    }
-}
-<#
-
-.ForwardHelpTargetName Set-FileStorageTier
-.ForwardHelpCategory Function
-
-#>
-
-
-}
-

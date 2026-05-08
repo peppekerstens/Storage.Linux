@@ -1,156 +1,21 @@
-Function Remove-PhysicalDisk {
+function Remove-PhysicalDisk {
+    <#
+    .Synopsis
+        Not yet implemented on Linux. Delegates to Storage\Remove-PhysicalDisk on Windows.
+    .Notes
+        This is a compatibility stub. On Linux a Write-Warning is emitted.
+        Contributions welcome: https://github.com/peppekerstens/Storage.Linux
+    .Link
+        https://learn.microsoft.com/powershell/module/storage/remove-physicaldisk
+    #>
+    [CmdletBinding()]
+    param()
 
-[CmdletBinding(SupportsShouldProcess=$true, ConfirmImpact='High', PositionalBinding=$false)]
-param(
-    [Parameter(ParameterSetName='ByStoragePool', Mandatory=$true, Position=0, ValueFromPipeline=$true)]
-    [ValidateNotNullOrEmpty()]
-    [ValidateNotNull()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#MSFT_StoragePool')]
-    [ciminstance]
-    ${StoragePool},
-
-    [Parameter(ParameterSetName='ByVirtualDiskUniqueId', Mandatory=$true)]
-    [Parameter(ParameterSetName='ByVirtualDiskName', Mandatory=$true)]
-    [Parameter(ParameterSetName='ByVirtualDiskFriendlyName', Mandatory=$true)]
-    [Parameter(ParameterSetName='ByVirtualDisk', Mandatory=$true)]
-    [Parameter(ParameterSetName='ByStoragePoolUniqueId', Mandatory=$true)]
-    [Parameter(ParameterSetName='ByStoragePoolName', Mandatory=$true)]
-    [Parameter(ParameterSetName='ByStoragePoolFriendlyName', Mandatory=$true)]
-    [Parameter(ParameterSetName='ByStoragePool', Mandatory=$true)]
-    [ValidateNotNullOrEmpty()]
-    [ValidateNotNull()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#MSFT_PhysicalDisk')]
-    [ciminstance[]]
-    ${PhysicalDisks},
-
-    [Parameter(ParameterSetName='ByStoragePoolFriendlyName', Mandatory=$true)]
-    [ValidateNotNullOrEmpty()]
-    [ValidateNotNull()]
-    [string]
-    ${StoragePoolFriendlyName},
-
-    [Parameter(ParameterSetName='ByStoragePoolName', Mandatory=$true)]
-    [ValidateNotNullOrEmpty()]
-    [ValidateNotNull()]
-    [string]
-    ${StoragePoolName},
-
-    [Parameter(ParameterSetName='ByStoragePoolUniqueId', Mandatory=$true)]
-    [ValidateNotNullOrEmpty()]
-    [ValidateNotNull()]
-    [string]
-    ${StoragePoolUniqueId},
-
-    [Parameter(ParameterSetName='ByVirtualDisk', Mandatory=$true, Position=0, ValueFromPipeline=$true)]
-    [ValidateNotNullOrEmpty()]
-    [ValidateNotNull()]
-    [PSTypeName('Microsoft.Management.Infrastructure.CimInstance#MSFT_VirtualDisk')]
-    [ciminstance]
-    ${VirtualDisk},
-
-    [Parameter(ParameterSetName='ByVirtualDiskFriendlyName', Mandatory=$true)]
-    [ValidateNotNullOrEmpty()]
-    [ValidateNotNull()]
-    [string]
-    ${VirtualDiskFriendlyName},
-
-    [Parameter(ParameterSetName='ByVirtualDiskName', Mandatory=$true)]
-    [ValidateNotNullOrEmpty()]
-    [ValidateNotNull()]
-    [string]
-    ${VirtualDiskName},
-
-    [Parameter(ParameterSetName='ByVirtualDiskUniqueId', Mandatory=$true)]
-    [ValidateNotNullOrEmpty()]
-    [ValidateNotNull()]
-    [string]
-    ${VirtualDiskUniqueId},
-
-    [Parameter(ParameterSetName='ByVirtualDiskUniqueId')]
-    [Parameter(ParameterSetName='ByVirtualDiskName')]
-    [Parameter(ParameterSetName='ByVirtualDiskFriendlyName')]
-    [Parameter(ParameterSetName='ByVirtualDisk')]
-    [Parameter(ParameterSetName='ByStoragePoolUniqueId')]
-    [Parameter(ParameterSetName='ByStoragePoolName')]
-    [Parameter(ParameterSetName='ByStoragePoolFriendlyName')]
-    [Parameter(ParameterSetName='ByStoragePool')]
-    [Alias('Session')]
-    [ValidateNotNullOrEmpty()]
-    [CimSession[]]
-    ${CimSession},
-
-    [Parameter(ParameterSetName='ByVirtualDiskUniqueId')]
-    [Parameter(ParameterSetName='ByVirtualDiskName')]
-    [Parameter(ParameterSetName='ByVirtualDiskFriendlyName')]
-    [Parameter(ParameterSetName='ByVirtualDisk')]
-    [Parameter(ParameterSetName='ByStoragePoolUniqueId')]
-    [Parameter(ParameterSetName='ByStoragePoolName')]
-    [Parameter(ParameterSetName='ByStoragePoolFriendlyName')]
-    [Parameter(ParameterSetName='ByStoragePool')]
-    [int]
-    ${ThrottleLimit},
-
-    [Parameter(ParameterSetName='ByVirtualDiskUniqueId')]
-    [Parameter(ParameterSetName='ByVirtualDiskName')]
-    [Parameter(ParameterSetName='ByVirtualDiskFriendlyName')]
-    [Parameter(ParameterSetName='ByVirtualDisk')]
-    [Parameter(ParameterSetName='ByStoragePoolUniqueId')]
-    [Parameter(ParameterSetName='ByStoragePoolName')]
-    [Parameter(ParameterSetName='ByStoragePoolFriendlyName')]
-    [Parameter(ParameterSetName='ByStoragePool')]
-    [switch]
-    ${AsJob})
-
-begin
-{
-    try {
-        $outBuffer = $null
-        if ($PSBoundParameters.TryGetValue('OutBuffer', [ref]$outBuffer))
-        {
-            $PSBoundParameters['OutBuffer'] = 1
-        }
-
-        $wrappedCmd = $ExecutionContext.InvokeCommand.GetCommand('Remove-PhysicalDisk', [System.Management.Automation.CommandTypes]::Function)
-        $scriptCmd = {& $wrappedCmd @PSBoundParameters }
-
-        $steppablePipeline = $scriptCmd.GetSteppablePipeline()
-        $steppablePipeline.Begin($PSCmdlet)
-    } catch {
-        throw
+    if ($IsLinux) {
+        Write-Warning "Remove-PhysicalDisk is not yet implemented in Storage.Linux. Contributions welcome: https://github.com/peppekerstens/Storage.Linux"
+        return
     }
+
+    # Windows: delegate to built-in Storage module
+    Storage\Remove-PhysicalDisk @PSBoundParameters
 }
-
-process
-{
-    try {
-        $steppablePipeline.Process($_)
-    } catch {
-        throw
-    }
-}
-
-end
-{
-    try {
-        $steppablePipeline.End()
-    } catch {
-        throw
-    }
-}
-
-clean
-{
-    if ($null -ne $steppablePipeline) {
-        $steppablePipeline.Clean()
-    }
-}
-<#
-
-.ForwardHelpTargetName Remove-PhysicalDisk
-.ForwardHelpCategory Function
-
-#>
-
-
-}
-

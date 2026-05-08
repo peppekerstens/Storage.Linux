@@ -1,84 +1,21 @@
-Function Set-FileIntegrity {
+function Set-FileIntegrity {
+    <#
+    .Synopsis
+        Not yet implemented on Linux. Delegates to Storage\Set-FileIntegrity on Windows.
+    .Notes
+        This is a compatibility stub. On Linux a Write-Warning is emitted.
+        Contributions welcome: https://github.com/peppekerstens/Storage.Linux
+    .Link
+        https://learn.microsoft.com/powershell/module/storage/set-fileintegrity
+    #>
+    [CmdletBinding()]
+    param()
 
-[CmdletBinding(SupportsShouldProcess=$true, ConfirmImpact='Medium', PositionalBinding=$false)]
-param(
-    [Parameter(ParameterSetName='Set1', Mandatory=$true, Position=0, ValueFromPipelineByPropertyName=$true)]
-    [Alias('FullName')]
-    [string]
-    ${FileName},
-
-    [Parameter(ParameterSetName='Set1', Position=1)]
-    [bool]
-    ${Enable},
-
-    [Parameter(ParameterSetName='Set1')]
-    [bool]
-    ${Enforce},
-
-    [Parameter(ParameterSetName='Set1')]
-    [Alias('Session')]
-    [ValidateNotNullOrEmpty()]
-    [CimSession[]]
-    ${CimSession},
-
-    [Parameter(ParameterSetName='Set1')]
-    [int]
-    ${ThrottleLimit},
-
-    [Parameter(ParameterSetName='Set1')]
-    [switch]
-    ${AsJob})
-
-begin
-{
-    try {
-        $outBuffer = $null
-        if ($PSBoundParameters.TryGetValue('OutBuffer', [ref]$outBuffer))
-        {
-            $PSBoundParameters['OutBuffer'] = 1
-        }
-
-        $wrappedCmd = $ExecutionContext.InvokeCommand.GetCommand('Set-FileIntegrity', [System.Management.Automation.CommandTypes]::Function)
-        $scriptCmd = {& $wrappedCmd @PSBoundParameters }
-
-        $steppablePipeline = $scriptCmd.GetSteppablePipeline()
-        $steppablePipeline.Begin($PSCmdlet)
-    } catch {
-        throw
+    if ($IsLinux) {
+        Write-Warning "Set-FileIntegrity is not yet implemented in Storage.Linux. Contributions welcome: https://github.com/peppekerstens/Storage.Linux"
+        return
     }
+
+    # Windows: delegate to built-in Storage module
+    Storage\Set-FileIntegrity @PSBoundParameters
 }
-
-process
-{
-    try {
-        $steppablePipeline.Process($_)
-    } catch {
-        throw
-    }
-}
-
-end
-{
-    try {
-        $steppablePipeline.End()
-    } catch {
-        throw
-    }
-}
-
-clean
-{
-    if ($null -ne $steppablePipeline) {
-        $steppablePipeline.Clean()
-    }
-}
-<#
-
-.ForwardHelpTargetName Set-FileIntegrity
-.ForwardHelpCategory Function
-
-#>
-
-
-}
-
