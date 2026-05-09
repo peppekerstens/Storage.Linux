@@ -37,14 +37,8 @@ function Get-Partition {
         return
     }
 
-    if (-not (Get-Command lsblk -ErrorAction SilentlyContinue)) {
-        throw "Get-Partition: 'lsblk' not found. Install util-linux: sudo apt-get install util-linux"
-    }
-
-    $json = lsblk --json --output NAME,SIZE,TYPE,FSTYPE,MOUNTPOINT,UUID,PARTUUID,PARTTYPE,LABEL,RM,RO 2>$null
-    if (-not $json) { return }
-
-    $allDevices = ($json | ConvertFrom-Json).blockdevices
+    $allDevices = Get-LsBlkData -Output 'NAME,SIZE,TYPE,FSTYPE,MOUNTPOINT,UUID,PARTUUID,PARTTYPE,LABEL,RM,RO' -Bytes
+    if (-not $allDevices) { return }
 
     # Build a flat list of all partitions with their parent disk number
     $diskIndex = 0

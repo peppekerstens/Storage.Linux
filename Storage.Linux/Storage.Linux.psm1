@@ -15,6 +15,16 @@ if (-not $IsLinux) {
     )
 }
 
+# Load private helpers first (not exported)
+$privatePath = Join-Path $PSScriptRoot 'Functions' 'Private'
+if (Test-Path $privatePath) {
+    $privateFiles = Get-ChildItem -Path $privatePath -Filter '*.ps1' -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -notlike '*.Tests.ps1' }
+    foreach ($file in $privateFiles) {
+        . $file.FullName
+    }
+}
+
 $functionPath = Join-Path $PSScriptRoot 'Functions'
 $functionFiles = Get-ChildItem -Path $functionPath -Filter '*.ps1' -ErrorAction SilentlyContinue |
     Where-Object { $_.Name -notlike '*.Tests.ps1' }
@@ -23,6 +33,8 @@ foreach ($file in $functionFiles) {
 }
 
 # Load the Crescendo-generated lsblk module as a private helper (not exported)
+# Note: Get-LsBlkData (Functions/Private/Get-LsBlkData.ps1) supersedes the
+# Crescendo-generated Get-LsBlk, which had incomplete parameter wiring.
 $crescendoPath = Join-Path $PSScriptRoot 'Crescendo' 'lsblk.psm1'
 if (Test-Path $crescendoPath) {
     Import-Module $crescendoPath -Force -ErrorAction SilentlyContinue

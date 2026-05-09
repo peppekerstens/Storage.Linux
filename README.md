@@ -320,7 +320,19 @@ Early versions included a Windows delegation path inside each cmdlet: if not Lin
 - `lsblk` lists swap devices with `MOUNTPOINT = [SWAP]`. `Get-Volume` filters these out with `-notmatch '^/'` so only real filesystem mountpoints are returned.
 - In WSL2 Ubuntu 24.04, the root distro filesystem mounts at `/mnt/wslg/distro`, not `/`. Tests must not hardcode `/` as an expected mountpoint.
 - `lsblk` column names use hyphens (e.g. `log-sec`, `phy-sec`) — accessed as `$d.'log-sec'` in PowerShell.
-- `Get-LsBlk` (Crescendo-generated raw `lsblk` wrapper) is an internal helper loaded as a nested module — it is **not** part of the public surface.
+- `Get-LsBlkData` is a private hand-written helper (superseding the original Crescendo-generated `Get-LsBlk`, which had incomplete parameter wiring). It is loaded from `Functions/Private/` and is **not** part of the public surface. `Get-Disk`, `Get-Partition`, and `Get-Volume` all call it rather than invoking `lsblk` directly. A companion `Expand-LsBlkDevices` private helper flattens the lsblk device tree.
+
+### Implementation Approach (Stage 2 — Crescendo audit)
+
+**Decision: Fix inconsistency — keep Crescendo directory, replace broken wrapper with hand-written private helper.**
+
+The original `Get-LsBlk` Crescendo wrapper (`Crescendo/lsblk.psm1`) had an empty `$__PARAMETERMAP` and empty `param()` block — none of the parameters were wired up. `Get-Disk`, `Get-Partition`, and `Get-Volume` therefore called `lsblk` directly inline, duplicating the command invocation and JSON parsing in each function.
+
+The fix introduces two private helpers in `Functions/Private/`:
+- `Get-LsBlkData` — wraps `lsblk --json --output <cols> [--bytes] [--all]` with proper error handling; all 3 cmdlets now call this instead of `lsblk` directly.
+- `Expand-LsBlkDevices` — recursively flattens the lsblk blockdevices tree; extracted from the inline function that was inside `Get-Volume`.
+
+The Crescendo JSON (`Crescendo/lsblk.crescendo.json`) is kept as documentation of the original design intent and updated with a `Bytes` parameter definition.
 - `Storage.Linux.Tests.ps1`: requires Pester 5.2+; 503 tests, all skipped on Windows (module cannot load), all run on Linux.
 - `Examples.Tests.ps1`: requires Pester 5.2+; uses `BeforeDiscovery` for `$PSScriptRoot` reliability; 31 tests — 15 pass on Windows (file existence + syntax), 16 are Linux-only.
 

@@ -45,14 +45,10 @@ function Get-Disk {
         return
     }
 
-    if (-not (Get-Command lsblk -ErrorAction SilentlyContinue)) {
-        throw "Get-Disk: 'lsblk' not found. Install util-linux: sudo apt-get install util-linux"
-    }
+    $allDevices = Get-LsBlkData -Output 'NAME,SIZE,TYPE,MOUNTPOINT,MODEL,SERIAL,ROTA,RM,STATE,TRAN,VENDOR,PTTYPE,LOG-SEC,PHY-SEC' -Bytes
+    if (-not $allDevices) { return }
 
-    $json = lsblk --json --bytes --output NAME,SIZE,TYPE,MOUNTPOINT,MODEL,SERIAL,ROTA,RM,STATE,TRAN,VENDOR,PTTYPE,LOG-SEC,PHY-SEC 2>$null
-    if (-not $json) { return }
-
-    $disks = ($json | ConvertFrom-Json).blockdevices | Where-Object { $_.type -eq 'disk' }
+    $disks = $allDevices | Where-Object { $_.type -eq 'disk' }
 
     $index = 0
     $results = foreach ($d in $disks) {

@@ -42,25 +42,20 @@ function Get-Volume {
         return
     }
 
-    if (-not (Get-Command lsblk -ErrorAction SilentlyContinue)) {
-        throw "Get-Volume: 'lsblk' not found. Install util-linux: sudo apt-get install util-linux"
-    }
     if (-not (Get-Command df -ErrorAction SilentlyContinue)) {
-        throw "Get-Volume: 'df' not found."
+        $ex = [System.InvalidOperationException]::new("Get-Volume: 'df' not found.")
+        $er = [System.Management.Automation.ErrorRecord]::new(
+            $ex, 'Storage.Linux.DfNotFound',
+            [System.Management.Automation.ErrorCategory]::NotInstalled, $null)
+        $PSCmdlet.ThrowTerminatingError($er)
     }
 
-    # Get filesystem info from lsblk (--bytes ensures SIZE is always a numeric integer)
-    $json = lsblk --json --bytes --output NAME,FSTYPE,LABEL,UUID,MOUNTPOINT,SIZE,TYPE 2>$null
-    if (-not $json) { return }
+    # Get filesystem info via shared lsblk helper (--bytes ensures SIZE is always numeric)
+    $rawDevices = Get-LsBlkData -Output 'NAME,FSTYPE,LABEL,UUID,MOUNTPOINT,SIZE,TYPE' -Bytes
+    if (-not $rawDevices) { return }
 
-    # Flatten all devices (including children/partitions)
-    function Expand-LsBlkDevices($devices) {
-        foreach ($d in $devices) {
-            $d
-            if ($d.children) { Expand-LsBlkDevices $d.children }
-        }
-    }
-    $allDevices = Expand-LsBlkDevices (($json | ConvertFrom-Json).blockdevices)
+    # Flatten tree (partitions are children of disks in lsblk JSON)
+    $allDevices = Expand-LsBlkDevices -Devices $rawDevices
 
     # Get df output for size/usage (bytes)
     $dfLines = df --block-size=1 --output=target,size,used,avail,fstype 2>$null | Select-Object -Skip 1

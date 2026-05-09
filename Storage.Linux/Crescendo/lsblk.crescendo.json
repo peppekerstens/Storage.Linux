@@ -26,6 +26,11 @@
                     "Name": "AllDevices",
                     "OriginalName": "-a",
                     "ParameterType": "switch"
+                },
+                {
+                    "Name": "Bytes",
+                    "OriginalName": "--bytes",
+                    "ParameterType": "switch"
                 }
             ],
             "OutputHandlers": [
