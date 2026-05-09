@@ -4,7 +4,7 @@
 
 @{
     RootModule        = 'Storage.Linux.psm1'
-    ModuleVersion     = '0.5.0'
+    ModuleVersion     = '0.6.0'
     GUID              = 'b2c3d4e5-f6a7-8901-bcde-f12345678901'
     Author            = 'Peppe Kerstens'
     CompanyName       = ''
@@ -198,6 +198,7 @@
             LicenseUri   = 'https://github.com/peppekerstens/Storage.Linux/blob/main/LICENSE'
             ProjectUri   = 'https://github.com/peppekerstens/Storage.Linux'
             ReleaseNotes = @'
+0.6.0 - Implemented Clear-Disk (wipefs), Dismount-DiskImage (losetup -d), Format-Volume (mkfs), Get-DiskImage (losetup -l --json), New-Partition (sfdisk --append), Remove-Partition (sfdisk --delete), Repair-Volume (fsck), Resize-Partition (sfdisk -N + resize2fs/xfs_growfs). All PSSA-clean.
 0.3.0 - FunctionsToExport expanded to all 148 Windows Storage functions. AliasesToExport lists all 10 Windows Storage aliases. Get-LsBlk (Crescendo internal) removed from public surface.
 0.2.0 - Get-Disk, Get-PhysicalDisk, Get-Partition, Get-Volume: full Linux implementations via lsblk/df. Module manifest and root module added.
 0.1.0 - Initial scaffolding with proxy function stubs and Crescendo lsblk config.

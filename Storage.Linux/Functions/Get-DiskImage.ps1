@@ -1,21 +1,44 @@
 function Get-DiskImage {
     <#
-    .Synopsis
-        Not yet implemented on Linux. Delegates to Storage\Get-DiskImage on Windows.
-    .Notes
-        This is a compatibility stub. On Linux a Write-Warning is emitted.
-        Contributions welcome: https://github.com/peppekerstens/Storage.Linux
-    .Link
+    .SYNOPSIS
+        Gets disk image (loop device) information. On Linux, wraps 'losetup -l --json'.
+    .PARAMETER ImagePath
+        Filter by image file path.
+    .LINK
         https://learn.microsoft.com/powershell/module/storage/get-diskimage
     #>
     [CmdletBinding()]
-    param()
-
-    if ($IsLinux) {
-        Write-Warning "Get-DiskImage is not yet implemented in Storage.Linux. Contributions welcome: https://github.com/peppekerstens/Storage.Linux"
-        return
+    [OutputType([PSCustomObject])]
+    param(
+        [Parameter(Position = 0, ValueFromPipeline = $true)]
+        [string[]]$ImagePath
+    )
+    process {
+        if ($IsLinux) {
+            $raw = & losetup -l --json 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Error "losetup failed: $raw"
+                return
+            }
+            $data = ($raw | ConvertFrom-Json).loopdevices
+            if (-not $data) { $data = @() }
+            $results = @(foreach ($dev in $data) {
+                [PSCustomObject]@{
+                    ImagePath     = $dev.'back-file'
+                    DevicePath    = $dev.name
+                    Size          = $dev.'sizelimit'
+                    BlockSize     = 512
+                    LogicalSectorSize = 512
+                    PhysicalSectorSize = 512
+                    Attached      = $true
+                }
+            })
+            if ($ImagePath) {
+                $results = $results | Where-Object { $_.ImagePath -in $ImagePath }
+            }
+            $results
+        } else {
+            Storage\Get-DiskImage @PSBoundParameters
+        }
     }
-
-    # Windows: delegate to built-in Storage module
-    Storage\Get-DiskImage @PSBoundParameters
 }

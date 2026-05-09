@@ -219,7 +219,7 @@ Describe 'Stub functions' -Skip:(-not $script:OnLinux) {
         @{ Name = 'Add-TargetPortToMaskingSet' }
         @{ Name = 'Add-VirtualDiskToMaskingSet' }
         @{ Name = 'Block-FileShareAccess' }
-        @{ Name = 'Clear-Disk' }
+        # Clear-Disk — implemented, tested separately
         @{ Name = 'Clear-FileStorageTier' }
         @{ Name = 'Clear-StorageDiagnosticInfo' }
         @{ Name = 'Connect-VirtualDisk' }
@@ -234,16 +234,16 @@ Describe 'Stub functions' -Skip:(-not $script:OnLinux) {
         @{ Name = 'Disable-StorageHighAvailability' }
         @{ Name = 'Disable-StorageMaintenanceMode' }
         @{ Name = 'Disconnect-VirtualDisk' }
-        @{ Name = 'Dismount-DiskImage' }
+        # Dismount-DiskImage — implemented, tested separately
         @{ Name = 'Enable-PhysicalDiskIdentification' }
         @{ Name = 'Enable-StorageDataCollection' }
         @{ Name = 'Enable-StorageEnclosureIdentification' }
         @{ Name = 'Enable-StorageEnclosurePower' }
         @{ Name = 'Enable-StorageHighAvailability' }
         @{ Name = 'Enable-StorageMaintenanceMode' }
-        @{ Name = 'Format-Volume' }
+        # Format-Volume — implemented, tested separately
         @{ Name = 'Get-DedupProperties' }
-        @{ Name = 'Get-DiskImage' }
+        # Get-DiskImage — implemented, tested separately
         @{ Name = 'Get-DiskStorageNodeView' }
         @{ Name = 'Get-FileIntegrity' }
         @{ Name = 'Get-FileShare' }
@@ -299,7 +299,7 @@ Describe 'Stub functions' -Skip:(-not $script:OnLinux) {
         @{ Name = 'Mount-DiskImage' }
         @{ Name = 'New-FileShare' }
         @{ Name = 'New-MaskingSet' }
-        @{ Name = 'New-Partition' }
+        # New-Partition — implemented, tested separately
         @{ Name = 'New-StorageFileServer' }
         @{ Name = 'New-StoragePool' }
         @{ Name = 'New-StorageSubsystemVirtualDisk' }
@@ -315,7 +315,7 @@ Describe 'Stub functions' -Skip:(-not $script:OnLinux) {
         @{ Name = 'Remove-InitiatorId' }
         @{ Name = 'Remove-InitiatorIdFromMaskingSet' }
         @{ Name = 'Remove-MaskingSet' }
-        @{ Name = 'Remove-Partition' }
+        # Remove-Partition — implemented, tested separately
         @{ Name = 'Remove-PartitionAccessPath' }
         @{ Name = 'Remove-PhysicalDisk' }
         @{ Name = 'Remove-StorageFaultDomain' }
@@ -330,10 +330,10 @@ Describe 'Stub functions' -Skip:(-not $script:OnLinux) {
         @{ Name = 'Rename-MaskingSet' }
         @{ Name = 'Repair-FileIntegrity' }
         @{ Name = 'Repair-VirtualDisk' }
-        @{ Name = 'Repair-Volume' }
+        # Repair-Volume — implemented, tested separately
         @{ Name = 'Reset-PhysicalDisk' }
         @{ Name = 'Reset-StorageReliabilityCounter' }
-        @{ Name = 'Resize-Partition' }
+        # Resize-Partition — implemented, tested separately
         @{ Name = 'Resize-StorageTier' }
         @{ Name = 'Resize-VirtualDisk' }
         @{ Name = 'Revoke-FileShareAccess' }
@@ -386,5 +386,72 @@ Describe 'Stub functions' -Skip:(-not $script:OnLinux) {
             & $Name -WarningVariable w -WarningAction SilentlyContinue
             $w | Should -Not -BeNullOrEmpty
         }
+    }
+}
+
+# ---------------------------------------------------------------------------
+Describe 'Get-DiskImage' -Skip:(-not $script:OnLinux) {
+
+    It 'returns results without error' {
+        { Get-DiskImage } | Should -Not -Throw
+    }
+
+    It 'returns an array (possibly empty if no loop devices)' {
+        $result = @(Get-DiskImage)
+        $result.GetType().IsArray | Should -Be $true
+    }
+}
+
+Describe 'Dismount-DiskImage' -Skip:(-not $script:OnLinux) {
+
+    It 'supports -WhatIf without error' {
+        { Dismount-DiskImage -ImagePath '/tmp/test.img' -WhatIf } | Should -Not -Throw
+    }
+}
+
+Describe 'Clear-Disk' -Skip:(-not $script:OnLinux) {
+
+    It 'supports -WhatIf without error' {
+        { Clear-Disk -Path '/dev/null' -WhatIf } | Should -Not -Throw
+    }
+}
+
+Describe 'Format-Volume' -Skip:(-not $script:OnLinux) {
+
+    It 'supports -WhatIf without error' {
+        { Format-Volume -Path '/dev/null' -FileSystem ext4 -WhatIf } | Should -Not -Throw
+    }
+
+    It 'warns for unsupported -DriveLetter' {
+        Format-Volume -DriveLetter 'C' -WhatIf -WarningVariable w -WarningAction SilentlyContinue
+        $w | Should -Not -BeNullOrEmpty
+    }
+}
+
+Describe 'New-Partition' -Skip:(-not $script:OnLinux) {
+
+    It 'supports -WhatIf without error' {
+        { New-Partition -DiskPath '/dev/null' -UseMaximumSize -WhatIf } | Should -Not -Throw
+    }
+}
+
+Describe 'Remove-Partition' -Skip:(-not $script:OnLinux) {
+
+    It 'supports -WhatIf without error' {
+        { Remove-Partition -DiskPath '/dev/null' -PartitionNumber 1 -WhatIf } | Should -Not -Throw
+    }
+}
+
+Describe 'Resize-Partition' -Skip:(-not $script:OnLinux) {
+
+    It 'supports -WhatIf without error' {
+        { Resize-Partition -DiskNumber 0 -PartitionNumber 1 -UseMaximumSize -WhatIf } | Should -Not -Throw
+    }
+}
+
+Describe 'Repair-Volume' -Skip:(-not $script:OnLinux) {
+
+    It 'supports -WhatIf without error' {
+        { Repair-Volume -Path '/dev/null' -WhatIf } | Should -Not -Throw
     }
 }
