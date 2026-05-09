@@ -1,5 +1,7 @@
 # Storage.Linux
 
+[![Pester Tests](https://github.com/peppekerstens/Storage.Linux/actions/workflows/pester.yml/badge.svg)](https://github.com/peppekerstens/Storage.Linux/actions/workflows/pester.yml)
+
 PowerShell 7.x module providing cmdlet parity with the Windows `Storage` module on Linux. Wraps native CLI tools (`lsblk`, `df`) to deliver a familiar PowerShell experience for disk, partition and volume management.
 
 **This module is Linux-only.** It will refuse to load on Windows with a clear error message. On Windows, use the built-in `Storage` module (`Import-Module Storage`) instead.
@@ -336,6 +338,28 @@ The Crescendo JSON (`Crescendo/lsblk.crescendo.json`) is kept as documentation o
 - `Storage.Linux.Tests.ps1`: requires Pester 5.2+; 503 tests, all skipped on Windows (module cannot load), all run on Linux.
 - `Examples.Tests.ps1`: requires Pester 5.2+; uses `BeforeDiscovery` for `$PSScriptRoot` reliability; 31 tests — 15 pass on Windows (file existence + syntax), 16 are Linux-only.
 
+---
+
+## CI / Testing
+
+Tested across 5 Linux distributions in containers:
+
+| Distro | Image |
+|---|---|
+| Ubuntu 24.04 | `ghcr.io/peppekerstens/testinfra:ubuntu-24.04` |
+| Debian 12 | `ghcr.io/peppekerstens/testinfra:debian-12` |
+| Fedora 40 | `ghcr.io/peppekerstens/testinfra:fedora-40` |
+| openSUSE Tumbleweed | `ghcr.io/peppekerstens/testinfra:opensuse-tumbleweed` |
+| Arch Linux | `ghcr.io/peppekerstens/testinfra:arch-latest` |
+
+Run locally with:
+
+```powershell
+# From the repo root
+docker compose -f docker-compose.test.yml up --abort-on-container-exit
+```
+
+GitHub Actions runs the same matrix on every push — see `.github/workflows/pester.yml`.
 ---
 
 ## Version history
