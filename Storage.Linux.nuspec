@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Storage.Linux</id>
+    <version>0.6.0</version>
+    <authors>peppekerstens</authors>
+    <description>PowerShell module for Linux providing cmdlet parity with the Windows Storage module. Wraps lsblk, df and sfdisk to implement Get-Disk, Get-PhysicalDisk, Get-Partition and Get-Volume.</description>
+    <tags>PowerShell Linux pwsh Module Storage</tags>
+    <projectUrl>https://github.com/peppekerstens/Storage.Linux</projectUrl>
+    <license type="expression">GPL-3.0-only</license>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+  </metadata>
+  <files>
+    <file src="Storage.Linux\**\*" target="Storage.Linux" />
+    <file src="PSScriptAnalyzerSettings.psd1" target="Storage.Linux" />
+  </files>
+</package>
+
+
